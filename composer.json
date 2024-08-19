@@ -1,0 +1,41 @@
+{
+  "name": "nixx/easy-workerman",
+  "description": "Easy library for HTTP server Workerman",
+  "type": "library",
+  "license": "MIT",
+  "autoload": {
+    "psr-4": {
+      "Nixx\\EasyWorkerman\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "nixx",
+      "email": "nixx.dj@gmail.com"
+    }
+  ],
+  "minimum-stability": "beta",
+  "require": {
+    "php": ">=8.2",
+    "amphp/postgres": "^v2.0",
+    "amphp/log": "^v2.0",
+    "amphp/redis": "^v2.0",
+    "league/climate": "^3.8",
+    "nikic/fast-route": "2.0.x-dev",
+    "workerman/workerman": "^5.0",
+    "psr/log": "^3.0",
+    "revolt/event-loop": "^1.0",
+    "monolog/monolog": "^3.5",
+    "ext-pcntl": "*",
+    "ext-sockets": "*",
+    "ext-event": "*"
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Nixx\\EasyWorkerman\\Test\\": "test/"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*"
+  }
+}
