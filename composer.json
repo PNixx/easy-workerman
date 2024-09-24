@@ -28,7 +28,8 @@
     "monolog/monolog": "^3.5",
     "ext-pcntl": "*",
     "ext-sockets": "*",
-    "ext-event": "*"
+    "ext-event": "*",
+    "ext-posix": "*"
   },
   "autoload-dev": {
     "psr-4": {

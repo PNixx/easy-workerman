@@ -19,7 +19,7 @@ final class MonitorWorker extends Worker {
 	 * @throws \Exception
 	 */
 	public final function onWorkerStarted(): void {
-		@cli_set_process_title('space-kombat-monitor');
+		@cli_set_process_title('monitor-worker');
 
 		//Инициализируем
 		new Monitor(APP_ROOT . '/src', ['php', 'html', 'htm', 'env', 'ini']);

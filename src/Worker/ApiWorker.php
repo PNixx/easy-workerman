@@ -17,8 +17,8 @@ abstract class ApiWorker extends HttpWorker {
 	 * @param string  $name
 	 * @param int     $port
 	 */
-	public function __construct(CLImate $cli, string $name, int $port) {
-		parent::__construct($cli, 'API', $name, $port);
+	public function __construct(CLImate $cli, string $name, int $port, array $context = []) {
+		parent::__construct($cli, 'API', $name, $port, $context);
 	}
 
 	/**

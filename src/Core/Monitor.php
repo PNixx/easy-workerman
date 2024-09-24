@@ -148,18 +148,17 @@ final class Monitor {
 	}
 
 	/**
-	 * @return bool
+	 * @return void
 	 */
-	public function checkAllFilesChange(): bool {
+	public function checkAllFilesChange(): void {
 		if( self::isPaused() ) {
-			return false;
+			return;
 		}
 		foreach( $this->paths as $path ) {
 			if( $this->checkFilesChange($path) ) {
-				return true;
+				return;
 			}
 		}
-		return false;
 	}
 
 	/**

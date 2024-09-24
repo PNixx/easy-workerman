@@ -214,7 +214,9 @@ trait PostgresTrait {
 	private function log($start_time, $sql, $params): void {
 		if( Logger::$logger->isHandling(Level::Debug) ) {
 			foreach( $params as $key => $value ) {
-				$sql = str_replace(':' . $key, self::escapeLiteral($value), $sql);
+				if( !($value instanceof ArelInterface) ) {
+					$sql = str_replace(':' . $key, self::escapeLiteral($value), $sql);
+				}
 			}
 			if( str_contains($sql, 'SELECT ') ) {
 				$sql = "\033[1;34m{$sql}\033[0m";

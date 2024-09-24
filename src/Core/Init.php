@@ -9,7 +9,9 @@ class Init {
 
 	/**
 	 * Конфигурация запуска
-	 * @param bool $can_daemon
+	 * @param bool   $can_daemon
+	 * @param array  $extend
+	 * @param string $config_file
 	 * @return CLImate
 	 */
 	public static function config(bool $can_daemon = true, array $extend = [], string $config_file = 'config/secrets.ini'): CLImate {

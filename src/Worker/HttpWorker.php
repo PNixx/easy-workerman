@@ -29,11 +29,12 @@ abstract class HttpWorker extends Worker {
 	 * @param string  $name
 	 * @param string  $process_name
 	 * @param int     $port
+	 * @param array   $context
 	 */
-	public function __construct(CLImate $cli, string $name, string $process_name, int $port) {
+	public function __construct(CLImate $cli, string $name, string $process_name, int $port, array $context = []) {
 		$this->configure($cli, $name, $process_name);
 		$this->requests = new \SplObjectStorage;
-		parent::__construct('http://0.0.0.0:' . $port);
+		parent::__construct('http://0.0.0.0:' . $port, $context);
 		$this->onMessage = [$this, 'onMessageReceived'];
 		$this->onClose = [$this, 'onClosed'];
 		$this->onWorkerReload = [$this, 'onReload'];
