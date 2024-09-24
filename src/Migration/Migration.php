@@ -14,8 +14,12 @@ abstract class Migration {
 
 	abstract public function down(): void;
 
-	protected function createTable(string $table, array $columns): void {
-		$this->driver()->execute('CREATE TABLE ' . $table . ' (' . implode(', ', array_map(fn($k, $v) => $k . ' ' . $v, array_keys($columns), array_values($columns))) . ')');
+	protected function createTable(string $table, array $columns, ?array $primary_keys = null): void {
+		$rows = array_map(fn($k, $v) => $k . ' ' . $v, array_keys($columns), array_values($columns));
+		if( $primary_keys ) {
+			$rows[] = 'PRIMARY KEY (' . implode(', ', $primary_keys) . ')';
+		}
+		$this->driver()->execute('CREATE TABLE ' . $table . ' (' . implode(', ', $rows) . ')');
 	}
 
 	protected function dropTable(string $table): void {
