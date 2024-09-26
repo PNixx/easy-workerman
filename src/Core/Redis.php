@@ -4,30 +4,36 @@ namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Cache\CacheException;
 use Amp\Redis\RedisClient;
+use Amp\Redis\RedisSubscriber;
 use Monolog\Level;
 use function Amp\Redis\createRedisClient;
+use function Amp\Redis\createRedisConnector;
 
 final class Redis {
 
-	/**
-	 * @var RedisClient[]
-	 */
-	protected array $connections;
-
-	/**
-	 * @var Redis
-	 */
+	protected RedisClient $connection;
 	protected static Redis $instance;
 	protected array $config;
+	protected static RedisSubscriber $subscriber;
 
 	/**
 	 * @return RedisClient|null
 	 */
 	public static function client(): ?RedisClient {
 		if( isset(Redis::$instance) ) {
-			return Redis::$instance->connections[rand(0, count(Redis::$instance->connections) - 1)];
+			return Redis::$instance->connection;
 		}
 		return null;
+	}
+
+	/**
+	 * @return RedisSubscriber|null
+	 */
+	public static function subscriber(): ?RedisSubscriber {
+		if( !isset(self::$subscriber) ) {
+			self::$subscriber = new RedisSubscriber(createRedisConnector('tcp://' . self::$instance->config['url']));
+		}
+		return self::$subscriber;
 	}
 
 	/**
@@ -44,17 +50,11 @@ final class Redis {
 	 * Подключаемся к редису
 	 */
 	public static function connect(): void {
-		if( isset(self::$instance->connections) ) {
-			foreach( self::$instance->connections as $i => $connection ) {
-				$connection->quit();
-				unset(self::$instance->connections[$i]);
-				unset($connection);
-			}
+		if( isset(self::$instance->connection) ) {
+			self::$instance->connection->quit();
+			unset(self::$instance->connection);
 		}
-		$servers = is_array(self::$instance->config['url']) ? self::$instance->config['url'] : [self::$instance->config['url']];
-		foreach( $servers as $server ) {
-			self::$instance->connections[] = createRedisClient('tcp://' . $server);
-		}
+		self::$instance->connection = createRedisClient('tcp://' . self::$instance->config['url']);
 	}
 
 	/**
