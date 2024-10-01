@@ -26,7 +26,7 @@ abstract class Controller {
 	 * @return bool
 	 */
 	public function isBot(): bool {
-		return preg_match('/Wotbox|googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest\/0\.|pinterestbot|slackbot|vkShare|W3C_Validator|whatsapp|Mail\.RU_Bot|yahoo-help\.jp|MJ12bot|wget|curl/i', $this->request->header('user-agent'));
+		return empty($this->request->header('user-agent')) || preg_match('/Wotbox|googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest\/0\.|pinterestbot|slackbot|vkShare|W3C_Validator|whatsapp|Mail\.RU_Bot|yahoo-help\.jp|MJ12bot|wget|curl/i', $this->request->header('user-agent'));
 	}
 
 	/**

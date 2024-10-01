@@ -43,7 +43,7 @@ abstract class ApiWorker extends HttpWorker {
 
 			//Block all bots
 			if( $controller->isBot() ) {
-				return new Response(401);
+				return new Response(403);
 			}
 
 			//Execute action
