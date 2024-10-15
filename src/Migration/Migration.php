@@ -2,12 +2,15 @@
 
 namespace Nixx\EasyWorkerman\Migration;
 
+use Nixx\EasyWorkerman\Core\PgTransaction;
 use Nixx\EasyWorkerman\Core\Postgres;
 
 abstract class Migration {
 
-	public function driver(): Postgres {
-		return Postgres::get();
+	public function __construct(protected readonly ?PgTransaction $transaction = null) {}
+
+	public function driver(): Postgres|PgTransaction {
+		return $this->transaction ?: Postgres::get();
 	}
 
 	abstract public function up(): void;

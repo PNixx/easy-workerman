@@ -29,7 +29,8 @@
     "ext-pcntl": "*",
     "ext-sockets": "*",
     "ext-event": "*",
-    "ext-posix": "*"
+    "ext-posix": "*",
+    "ext-readline": "*"
   },
   "autoload-dev": {
     "psr-4": {

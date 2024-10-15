@@ -11,7 +11,9 @@ use Nixx\EasyWorkerman\Core\PgTransaction;
 class SchemaMigration extends Migration {
 	const TABLE = 'schema_migrations';
 
-	public function __construct(protected readonly string $directory) {}
+	public function __construct(protected readonly string $directory) {
+		parent::__construct();
+	}
 
 	public function check(): void {
 		try {
@@ -32,10 +34,10 @@ class SchemaMigration extends Migration {
 	public function migrate(): void {
 		$files = array_diff_key($this->files(), array_flip($this->versions()));
 		foreach( $files as $file ) {
-			$migrate = $this->klass($file);
 			Logger::$logger->alert(str_pad('== ' . $this->version($file) . ' ' . $this->className($file) . ': migrating ==', 80, '='));
 			$time = microtime(true);
-			$this->driver()->transaction(function(PgTransaction $transaction) use ($migrate, $file) {
+			$this->driver()->transaction(function(PgTransaction $transaction) use ($file) {
+				$migrate = $this->klass($file, $transaction);
 				$migrate->up();
 				$transaction->insert(self::TABLE, ['version' => $this->version($file)]);
 			});
@@ -53,10 +55,10 @@ class SchemaMigration extends Migration {
 			$files = array_intersect_key($this->files(), array_flip($this->versions()));
 			if( $files ) {
 				$file = end($files);
-				$migrate = $this->klass($file);
 				Logger::$logger->alert(str_pad('== ' . $this->version($file) . ' ' . $this->className($file) . ': reverting ==', 80, '='));
 				$time = microtime(true);
-				$this->driver()->transaction(function(PgTransaction $transaction) use ($migrate, $file) {
+				$this->driver()->transaction(function(PgTransaction $transaction) use ($file) {
+					$migrate = $this->klass($file, $transaction);
 					$migrate->down();
 					$transaction->delete(self::TABLE, ['version' => $this->version($file)]);
 				});
@@ -71,7 +73,7 @@ class SchemaMigration extends Migration {
 	 */
 	public function create(): void {
 		echo 'Write unique class name, for example: CreateUser: ';
-		$name = readline();
+		$name = $argv[2] ?? readline();
 		if( empty($name) ) {
 			Logger::$logger->alert('Empty, skipped');
 		}
