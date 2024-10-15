@@ -175,13 +175,14 @@ PHP;
 	}
 
 	/**
-	 * @param string $file
+	 * @param string        $file
+	 * @param PgTransaction $transaction
 	 * @return Migration
 	 */
-	protected function klass(string $file): Migration {
+	protected function klass(string $file, PgTransaction $transaction): Migration {
 		require_once $file;
 		$class = $this->className($file);
-		return new $class;
+		return new $class($transaction);
 	}
 
 	/**
