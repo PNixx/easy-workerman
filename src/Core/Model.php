@@ -163,7 +163,7 @@ abstract class Model implements \ArrayAccess {
 		};
 
 		//Если можно искать в кеше
-		$key = implode(':', array_map(fn($k, $v) => $k . ':' . $v, array_keys($params), $params));
+		$key = implode(':', array_map(fn($k, $v) => $k . ':' . (is_array($v) ? implode(',', $v) : $v), array_keys($params), $params));
 		if( $cache ) {
 			$result = Redis::cache($name . ':' . $key, $func, $cache);
 		} else {
