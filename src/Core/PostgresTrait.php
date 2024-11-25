@@ -172,6 +172,9 @@ trait PostgresTrait {
 			if( $v instanceof ArelInterface ) {
 				return $k . ' ' . $v->toSql();
 			}
+			if( is_null($v) ) {
+				return $k . ' IS NULL';
+			}
 			return $k . ' ' . (is_array($v) ? 'IN (:' . $k . ')' : '= :' . $k);
 		}, array_keys($params), array_values($params)));
 	}
