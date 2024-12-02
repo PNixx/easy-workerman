@@ -28,9 +28,11 @@
     "monolog/monolog": "^3.5",
     "ext-pcntl": "*",
     "ext-sockets": "*",
-    "ext-event": "*",
     "ext-posix": "*",
     "ext-readline": "*"
+  },
+  "suggest": {
+    "ext-event": "*"
   },
   "autoload-dev": {
     "psr-4": {
