@@ -220,4 +220,12 @@ abstract class Model implements \ArrayAccess {
 	public static function select(array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
 		return array_map(fn($v) => new static($v), Postgres::get()->select(static::$table, $params, $columns, $limit, $offset, $order));
 	}
+
+	/**
+	 * @param array $params
+	 * @return bool
+	 */
+	public static function exists(array $params): bool {
+		return Postgres::get()->exists(static::$table, $params);
+	}
 }
