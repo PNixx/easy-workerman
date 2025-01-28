@@ -14,7 +14,6 @@
       "email": "nixx.dj@gmail.com"
     }
   ],
-  "minimum-stability": "beta",
   "require": {
     "php": ">=8.2",
     "amphp/postgres": "^v2.0",

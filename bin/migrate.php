@@ -42,4 +42,5 @@ try {
 	}
 } catch (\Throwable $e) {
 	Logger::$logger->error($e::class . ': ' . $e->getMessage());
+	exit(1);
 }
