@@ -25,7 +25,7 @@ trait WorkerTrait {
 	 * @param string      $name
 	 * @param string|null $process_name
 	 */
-	public function configure(CLImate $cli, string $name, string $process_name = null): void {
+	public function configure(CLImate $cli, string $name, ?string $process_name = null): void {
 		$this->cli = $cli;
 		$this->name = $name;
 		$this->process_name = $process_name;
