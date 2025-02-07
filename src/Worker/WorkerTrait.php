@@ -2,6 +2,7 @@
 
 namespace Nixx\EasyWorkerman\Worker;
 
+use Amp\Future\UnhandledFutureError;
 use League\CLImate\CLImate;
 use Revolt\EventLoop;
 use Nixx\EasyWorkerman\Core\Init;
@@ -50,6 +51,9 @@ trait WorkerTrait {
 
 			//Обработка не пойманных ошибок в потоках
 			EventLoop::setErrorHandler(function(\Throwable $e): void {
+				if( $e instanceof UnhandledFutureError && $e->getPrevious() ) {
+					$e = $e->getMessage();
+				}
 				Logger::$logger->error('Exception handler: ' . get_class($e) . ', ' . $e->getMessage() . ', ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL . $e->getTraceAsString());
 			});
 
