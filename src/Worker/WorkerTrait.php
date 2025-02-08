@@ -52,7 +52,7 @@ trait WorkerTrait {
 			//Обработка не пойманных ошибок в потоках
 			EventLoop::setErrorHandler(function(\Throwable $e): void {
 				if( $e instanceof UnhandledFutureError && $e->getPrevious() ) {
-					$e = $e->getMessage();
+					$e = $e->getPrevious();
 				}
 				Logger::$logger->error('Exception handler: ' . get_class($e) . ', ' . $e->getMessage() . ', ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL . $e->getTraceAsString());
 			});
