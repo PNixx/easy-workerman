@@ -4,6 +4,7 @@ namespace Nixx\EasyWorkerman\Core;
 
 use League\CLImate\CLImate;
 use League\CLImate\Exceptions\InvalidArgumentException;
+use PNixx\DelayedJob\DelayedJob;
 
 class Init {
 
@@ -92,6 +93,9 @@ class Init {
 		//Подключаемся к редису
 		if( isset(CONFIG['redis']) ) {
 			new Redis(CONFIG['redis']);
+			if( class_exists(DelayedJob::class) ) {
+				new DelayedJob(CONFIG['redis']['url']);
+			}
 		}
 	}
 

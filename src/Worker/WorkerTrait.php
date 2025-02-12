@@ -7,6 +7,7 @@ use League\CLImate\CLImate;
 use Revolt\EventLoop;
 use Nixx\EasyWorkerman\Core\Init;
 use Nixx\EasyWorkerman\Core\Logger;
+use Workerman\Events\Fiber;
 
 /**
  * @property string $name
@@ -27,6 +28,7 @@ trait WorkerTrait {
 	 * @param string|null $process_name
 	 */
 	public function configure(CLImate $cli, string $name, ?string $process_name = null): void {
+		self::$eventLoopClass = Fiber::class;
 		$this->cli = $cli;
 		$this->name = $name;
 		$this->process_name = $process_name;

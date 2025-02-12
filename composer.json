@@ -31,7 +31,7 @@
     "ext-readline": "*"
   },
   "suggest": {
-    "ext-event": "*"
+    "pnixx/delayed_job": "^3.0"
   },
   "autoload-dev": {
     "psr-4": {
