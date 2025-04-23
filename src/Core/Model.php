@@ -187,9 +187,7 @@ abstract class Model implements \ArrayAccess {
 		if( empty($where) ) {
 			throw new \Exception('Where clause can not be blank');
 		}
-		$model = static::class;
-		$path = explode('\\', $model);
-		$name = array_pop($path);
+		$name = static::getClassName();
 		$func = fn() => current(Postgres::get()->execute('SELECT * FROM ' . static::$table . ' WHERE ' . $where . ' LIMIT 1', $params));
 
 		//Если можно искать в кеше
@@ -204,7 +202,7 @@ abstract class Model implements \ArrayAccess {
 			throw new NotFoundError($name . ' ' . $key . ' not found');
 		}
 
-		return new $model($result);
+		return new static($result);
 	}
 
 	/**
