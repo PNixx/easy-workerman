@@ -34,8 +34,8 @@ abstract class Model implements \ArrayAccess {
 	 * Возвращает имя текущего класса без namespace
 	 * @return string
 	 */
-	final public function getClassName(): string {
-		return (new \ReflectionClass($this))->getShortName();
+	final public static function getClassName(): string {
+		return (new \ReflectionClass(static::class))->getShortName();
 	}
 
 	/**
@@ -155,9 +155,7 @@ abstract class Model implements \ArrayAccess {
 	 * @throws CacheException
 	 */
 	public static function find_by(array $params, ?int $cache = null, array $columns = ['*']): static {
-		$model = static::class;
-		$path = explode('\\', $model);
-		$name = array_pop($path);
+		$name = static::getClassName();
 		$func = function() use ($params, $columns) {
 			return Postgres::get()->find_by(static::$table, $params, $columns);
 		};
@@ -174,7 +172,7 @@ abstract class Model implements \ArrayAccess {
 			throw new NotFoundError($name . ' ' . $key . ' not found');
 		}
 
-		return new $model($result);
+		return new static($result);
 	}
 
 	/**
