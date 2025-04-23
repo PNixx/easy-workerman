@@ -31,14 +31,6 @@ abstract class Model implements \ArrayAccess {
 	}
 
 	/**
-	 * Возвращает имя текущего класса без namespace
-	 * @return string
-	 */
-	final public static function getClassName(): string {
-		return (new \ReflectionClass(static::class))->getShortName();
-	}
-
-	/**
 	 * @return mixed
 	 */
 	final public function id(): mixed {
@@ -155,21 +147,18 @@ abstract class Model implements \ArrayAccess {
 	 * @throws CacheException
 	 */
 	public static function find_by(array $params, ?int $cache = null, array $columns = ['*']): static {
-		$name = static::getClassName();
-		$func = function() use ($params, $columns) {
-			return Postgres::get()->find_by(static::$table, $params, $columns);
-		};
+		$func = fn() => Postgres::get()->find_by(static::$table, $params, $columns);
 
 		//Если можно искать в кеше
-		$key = implode(':', array_map(fn($k, $v) => $k . ':' . (is_array($v) ? implode(',', $v) : $v), array_keys($params), $params));
+		$key = static::getCacheKey($params);
 		if( $cache ) {
-			$result = Redis::cache($name . ':' . $key, $func, $cache);
+			$result = Redis::cache($key, $func, $cache);
 		} else {
 			$result = $func();
 		}
 		//Ищем строку
 		if( empty($result) ) {
-			throw new NotFoundError($name . ' ' . $key . ' not found');
+			throw new NotFoundError($key . ' not found');
 		}
 
 		return new static($result);
@@ -187,19 +176,18 @@ abstract class Model implements \ArrayAccess {
 		if( empty($where) ) {
 			throw new \Exception('Where clause can not be blank');
 		}
-		$name = static::getClassName();
 		$func = fn() => current(Postgres::get()->execute('SELECT * FROM ' . static::$table . ' WHERE ' . $where . ' LIMIT 1', $params));
 
 		//Если можно искать в кеше
-		$key = implode(':', array_map(fn($k, $v) => $k . ':' . $v, array_keys($params), $params));
+		$key = static::getCacheKey($params);
 		if( $cache ) {
-			$result = Redis::cache($name . ':where:' . $key, $func, $cache);
+			$result = Redis::cache($key . ':' . md5($where), $func, $cache);
 		} else {
 			$result = $func();
 		}
 		//Ищем строку
 		if( empty($result) ) {
-			throw new NotFoundError($name . ' ' . $key . ' not found');
+			throw new NotFoundError($key . ' not found');
 		}
 
 		return new static($result);
@@ -223,5 +211,28 @@ abstract class Model implements \ArrayAccess {
 	 */
 	public static function exists(array $params): bool {
 		return Postgres::get()->exists(static::$table, $params);
+	}
+
+	/**
+	 * Возвращает имя текущего класса без namespace
+	 * @return string
+	 */
+	final public static function getClassName(): string {
+		return (new \ReflectionClass(static::class))->getShortName();
+	}
+
+	/**
+	 * @param array $params
+	 * @return string
+	 */
+	final public static function getCacheKey(array $params): string {
+		return implode(':', [static::getClassName(), ...array_map(fn($k, $v) => $k . ':' . (is_array($v) ? implode(',', $v) : $v), array_keys($params), $params)]);
+	}
+
+	/**
+	 * @param int|string $primary_key
+	 */
+	final public static function clearFindCache(int|string $primary_key): void {
+		Redis::delete(static::getCacheKey([static::$primary_key => $primary_key]));
 	}
 }
