@@ -4,6 +4,7 @@ namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Cache\CacheException;
 use JetBrains\PhpStorm\Immutable;
+use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
 abstract class Model implements \ArrayAccess {
@@ -226,7 +227,15 @@ abstract class Model implements \ArrayAccess {
 	 * @return string
 	 */
 	final public static function getCacheKey(array $params): string {
-		return implode(':', [static::getClassName(), ...array_map(fn($k, $v) => $k . ':' . (is_array($v) ? implode(',', $v) : $v), array_keys($params), $params)]);
+		return implode(':', [
+			static::getClassName(),
+			...array_map(function($k, $v) {
+				if( $v instanceof ArelInterface ) {
+					$v = md5($v->toSql());
+				}
+				return $k . ':' . (is_array($v) ? implode(',', $v) : $v);
+			}, array_keys($params), $params),
+		]);
 	}
 
 	/**
