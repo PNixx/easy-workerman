@@ -42,6 +42,12 @@ class QueryBuilderTest extends TestCase {
 		$this->postgres->select('events', $args);
 	}
 
+	public function testSelectRawWithValue() {
+		$args = ['query' => new Arel\Raw('strpos(lower(c), :query) > 0', 'test')];
+		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE strpos(lower(c), :query) > 0', ['query' => 'test']);
+		$this->postgres->select('events', $args);
+	}
+
 	public function testSelectNotNull() {
 		$args = ['query' => new Arel\NotNull()];
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE query IS NOT NULL', $args);
