@@ -2,10 +2,7 @@
 
 namespace Nixx\EasyWorkerman\Core\Arel;
 
-use JetBrains\PhpStorm\Deprecated;
-
-#[Deprecated('Use new Arel\In() instead')]
-final readonly class ArelSelect implements ArelInterface {
+final readonly class In implements ArelInterface {
 
 	public function __construct(protected string $sql) {}
 

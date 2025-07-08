@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpunit cacheResult="false">
+	<testsuites>
+		<testsuite name="default">
+			<directory suffix="Test.php">test</directory>
+		</testsuite>
+	</testsuites>
+	<source>
+		<include>
+			<directory suffix=".php">src</directory>
+		</include>
+	</source>
+	<php>
+		<const name="TESTING" value="true" />
+	</php>
+</phpunit>

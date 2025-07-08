@@ -3,5 +3,5 @@
 namespace Nixx\EasyWorkerman\Core\Arel;
 
 interface ArelInterface {
-	public function toSql(): string;
+	public function toSql(string $k): string;
 }

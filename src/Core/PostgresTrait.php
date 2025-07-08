@@ -170,7 +170,7 @@ trait PostgresTrait {
 	public function where(array $params): string {
 		return implode(' AND ', array_map(function($k, $v) {
 			if( $v instanceof ArelInterface ) {
-				return $k . ' ' . $v->toSql();
+				return $v->toSql($k);
 			}
 			if( is_null($v) ) {
 				return $k . ' IS NULL';
