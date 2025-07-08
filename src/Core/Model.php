@@ -231,7 +231,7 @@ abstract class Model implements \ArrayAccess {
 			static::getClassName(),
 			...array_map(function($k, $v) {
 				if( $v instanceof ArelInterface ) {
-					$v = md5($v->toSql());
+					$v = md5($v->toSql($k));
 				}
 				return $k . ':' . (is_array($v) ? implode(',', $v) : $v);
 			}, array_keys($params), $params),
