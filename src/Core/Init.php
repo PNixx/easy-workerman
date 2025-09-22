@@ -80,7 +80,7 @@ class Init {
 		set_error_handler(Init::errorHandler(...));
 
 		//Устанавливаем время в UTC, т.к. база вся работает только с ним
-		date_default_timezone_set(CONFIG['timezone'] ?? 'Europe/Moscow');
+		date_default_timezone_set(CONFIG['default']['timezone'] ?? 'Europe/Moscow');
 
 		$logger = new Logger($cli, $name);
 		$logger->logger();
