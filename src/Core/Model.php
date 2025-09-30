@@ -101,7 +101,8 @@ abstract class Model implements \ArrayAccess {
 				$data = Postgres::get()->insert(static::$table, $this->data, true);
 				$this->data = $data;
 			} else {
-				Postgres::get()->update(static::$table, $this->changed_data, [static::$primary_key => $this->getData()[static::$primary_key]]);
+				Postgres::get()->update(static::$table, $this->changed_data, $this->getPrimaryKeyParams());
+				$this->clearCache();
 			}
 			$this->changed_data = [];
 		}
@@ -111,7 +112,23 @@ abstract class Model implements \ArrayAccess {
 	 * @return array
 	 */
 	public function delete(): array {
-		return Postgres::get()->delete(static::$table, [static::$primary_key => $this->data[static::$primary_key]]);
+		$result = Postgres::get()->delete(static::$table, $this->getPrimaryKeyParams());
+		$this->clearCache();
+		return $result;
+	}
+
+	/**
+	 * @return array
+	 */
+	private function getPrimaryKeyParams(): array {
+		return [static::$primary_key => $this[static::$primary_key]];
+	}
+
+	/**
+	 * @return void
+	 */
+	private function clearCache(): void {
+		Redis::delete(static::getCacheKey($this->getPrimaryKeyParams()));
 	}
 
 	/**
@@ -236,12 +253,5 @@ abstract class Model implements \ArrayAccess {
 				return $k . ':' . (is_array($v) ? implode(',', $v) : $v);
 			}, array_keys($params), $params),
 		]);
-	}
-
-	/**
-	 * @param int|string $primary_key
-	 */
-	final public static function clearFindCache(int|string $primary_key): void {
-		Redis::delete(static::getCacheKey([static::$primary_key => $primary_key]));
 	}
 }
