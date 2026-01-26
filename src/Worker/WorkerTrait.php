@@ -57,6 +57,9 @@ trait WorkerTrait {
 					$e = $e->getPrevious();
 				}
 				Logger::$logger->error('Exception handler: ' . get_class($e) . ', ' . $e->getMessage() . ', ' . $e->getFile() . ':' . $e->getLine() . PHP_EOL . $e->getTraceAsString());
+				if( method_exists($this, 'onErrorHandler') ) {
+					$this->onErrorHandler($e);
+				}
 			});
 
 			//Устанавливаем статус, что запустились

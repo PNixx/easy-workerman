@@ -28,7 +28,8 @@
     "ext-pcntl": "*",
     "ext-sockets": "*",
     "ext-posix": "*",
-    "ext-readline": "*"
+    "ext-readline": "*",
+    "ext-pgsql": "*"
   },
   "suggest": {
     "pnixx/delayed_job": "^3.0"
