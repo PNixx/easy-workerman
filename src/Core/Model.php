@@ -3,11 +3,16 @@
 namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Cache\CacheException;
+use ArrayAccess;
 use JetBrains\PhpStorm\Immutable;
 use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
-abstract class Model implements \ArrayAccess {
+/**
+ * @template TData of array<array-key, mixed>
+ * @implements ArrayAccess<key-of<TData>, mixed>
+ */
+abstract class Model implements ArrayAccess {
 	public static string $table;
 	public static string $primary_key = 'id';
 
@@ -18,14 +23,14 @@ abstract class Model implements \ArrayAccess {
 
 	/**
 	 * Данные которые были обновлены
-	 * @var array
+	 * @var array<key-of<TData>, mixed>
 	 */
 	#[Immutable(Immutable::PROTECTED_WRITE_SCOPE)]
 	public array $changed_data = [];
 
 	/**
 	 * Model constructor.
-	 * @param array $data
+	 * @param array<key-of<TData>, mixed> $data
 	 */
 	public function __construct(array $data) {
 		$this->data = $data;
@@ -183,17 +188,14 @@ abstract class Model implements \ArrayAccess {
 	}
 
 	/**
-	 * @param string   $where
-	 * @param array    $params
-	 * @param int|null $cache Используем ли кеш для чтения / записи
+	 * @param non-empty-string $where
+	 * @param array            $params
+	 * @param int|null         $cache Используем ли кеш для чтения / записи
 	 * @return static
 	 * @throws CacheException
 	 * @throws NotFoundError
 	 */
 	public static function find_by_where(string $where, array $params, ?int $cache = null): static {
-		if( empty($where) ) {
-			throw new \Exception('Where clause can not be blank');
-		}
 		$func = fn() => current(Postgres::get()->execute('SELECT * FROM ' . static::$table . ' WHERE ' . $where . ' LIMIT 1', $params));
 
 		//Если можно искать в кеше
