@@ -39,13 +39,13 @@ final class Monitor {
 	/**
 	 * @var string
 	 */
-	public static string $lockFile = __DIR__ . '/../log/monitor.lock';
+	public static string $lock_file = __DIR__ . '/../log/monitor.lock';
 
 	/**
 	 * Pause monitor
 	 */
 	public static function pause(): void {
-		file_put_contents(self::$lockFile, time());
+		file_put_contents(self::$lock_file, time());
 	}
 
 	/**
@@ -54,8 +54,8 @@ final class Monitor {
 	 */
 	public static function resume(): void {
 		clearstatcache();
-		if( is_file(self::$lockFile) ) {
-			unlink(self::$lockFile);
+		if( is_file(self::$lock_file) ) {
+			unlink(self::$lock_file);
 		}
 	}
 
@@ -65,54 +65,54 @@ final class Monitor {
 	 */
 	public static function isPaused(): bool {
 		clearstatcache();
-		return file_exists(self::$lockFile);
+		return file_exists(self::$lock_file);
 	}
 
 	/**
 	 * FileMonitor constructor.
-	 * @param       $monitorDir
-	 * @param       $monitorExtensions
-	 * @param array $options
+	 * @param string $dir
+	 * @param array  $extensions
+	 * @param array  $options
 	 */
-	public function __construct($monitorDir, $monitorExtensions, array $options = []) {
+	public function __construct(string $dir, array $extensions, array $options = []) {
 		self::resume();
-		$this->paths = (array)$monitorDir;
-		$this->extensions = $monitorExtensions;
+		$this->paths = (array)$dir;
+		$this->extensions = $extensions;
 		if( !Worker::getAllWorkers() ) {
 			return;
 		}
-		$disableFunctions = explode(',', ini_get('disable_functions'));
-		if( in_array('exec', $disableFunctions, true) ) {
+		$disable_functions = explode(',', ini_get('disable_functions'));
+		if( in_array('exec', $disable_functions, true) ) {
 			echo "\nMonitor file change turned off because exec() has been disabled by disable_functions setting in " . PHP_CONFIG_FILE_PATH . "/php.ini\n";
 		} else {
 			Timer::add(1, $this->checkAllFilesChange(...));
 		}
 
-		$memoryLimit = $this->getMemoryLimit($options['memory_limit'] ?? null);
-		if( $memoryLimit ) {
-			Timer::add(60, [$this, 'checkMemory'], [$memoryLimit]);
+		$memory_limit = $this->getMemoryLimit($options['memory_limit'] ?? null);
+		if( $memory_limit ) {
+			Timer::add(60, [$this, 'checkMemory'], [$memory_limit]);
 		}
 	}
 
 	/**
-	 * @param $monitorDir
+	 * @param string $monitor_dir
 	 * @return bool
 	 */
-	public function checkFilesChange($monitorDir): bool {
-		static $lastMtime, $tooManyFilesCheck;
-		if( !$lastMtime ) {
-			$lastMtime = time();
+	public function checkFilesChange(string $monitor_dir): bool {
+		static $last_mtime, $too_many_files_check;
+		if( !$last_mtime ) {
+			$last_mtime = time();
 		}
 		clearstatcache();
-		if( !is_dir($monitorDir) ) {
-			if( !is_file($monitorDir) ) {
+		if( !is_dir($monitor_dir) ) {
+			if( !is_file($monitor_dir) ) {
 				return false;
 			}
-			$iterator = [new SplFileInfo($monitorDir)];
+			$iterator = [new SplFileInfo($monitor_dir)];
 		} else {
 			// recursive traversal directory
-			$dirIterator = new RecursiveDirectoryIterator($monitorDir, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS);
-			$iterator = new RecursiveIteratorIterator($dirIterator);
+			$directory_iterator = new RecursiveDirectoryIterator($monitor_dir, FilesystemIterator::SKIP_DOTS | FilesystemIterator::FOLLOW_SYMLINKS);
+			$iterator = new RecursiveIteratorIterator($directory_iterator);
 		}
 
 		$count = 0;
@@ -123,10 +123,10 @@ final class Monitor {
 				continue;
 			}
 			// check mtime
-			if( in_array($file->getExtension(), $this->extensions, true) && $lastMtime < $file->getMTime() ) {
+			if( in_array($file->getExtension(), $this->extensions, true) && $last_mtime < $file->getMTime() ) {
 				$var = 0;
 				exec('"' . PHP_BINARY . '" -l "' . $file . '"', $out, $var);
-				$lastMtime = $file->getMTime();
+				$last_mtime = $file->getMTime();
 				if( $var ) {
 					continue;
 				}
@@ -140,9 +140,9 @@ final class Monitor {
 				break;
 			}
 		}
-		if( !$tooManyFilesCheck && $count > 1000 ) {
-			echo "Monitor: There are too many files ($count files) in $monitorDir which makes file monitoring very slow\n";
-			$tooManyFilesCheck = 1;
+		if( !$too_many_files_check && $count > 1000 ) {
+			echo "Monitor: There are too many files ($count files) in $monitor_dir which makes file monitoring very slow\n";
+			$too_many_files_check = 1;
 		}
 		return false;
 	}
@@ -162,21 +162,21 @@ final class Monitor {
 	}
 
 	/**
-	 * @param $memoryLimit
+	 * @param float|int $memory_limit
 	 */
-	public function checkMemory($memoryLimit): void {
-		if( self::isPaused() || $memoryLimit <= 0 ) {
+	public function checkMemory(float|int $memory_limit): void {
+		if( self::isPaused() || $memory_limit <= 0 ) {
 			return;
 		}
 		$ppid = posix_getppid();
-		$childrenFile = "/proc/$ppid/task/$ppid/children";
-		if( !is_file($childrenFile) || !($children = file_get_contents($childrenFile)) ) {
+		$children_file = "/proc/$ppid/task/$ppid/children";
+		if( !is_file($children_file) || !($children = file_get_contents($children_file)) ) {
 			return;
 		}
 		foreach( explode(' ', $children) as $pid ) {
 			$pid = (int)$pid;
-			$statusFile = "/proc/$pid/status";
-			if( !is_file($statusFile) || !($status = file_get_contents($statusFile)) ) {
+			$status_file = "/proc/$pid/status";
+			if( !is_file($status_file) || !($status = file_get_contents($status_file)) ) {
 				continue;
 			}
 			$mem = 0;
@@ -184,7 +184,7 @@ final class Monitor {
 				$mem = $match[1];
 			}
 			$mem = (int)($mem / 1024);
-			if( $mem >= $memoryLimit ) {
+			if( $mem >= $memory_limit ) {
 				posix_kill($pid, SIGINT);
 			}
 		}
@@ -192,42 +192,42 @@ final class Monitor {
 
 	/**
 	 * Get memory limit
-	 * @param int|null $memoryLimit
+	 * @param int|null $memory_limit
 	 * @return float|int
 	 */
-	protected function getMemoryLimit(?int $memoryLimit): float|int {
-		if( $memoryLimit === 0 ) {
+	protected function getMemoryLimit(?int $memory_limit): float|int {
+		if( $memory_limit === 0 ) {
 			return 0;
 		}
-		$usePhpIni = false;
-		if( !$memoryLimit ) {
-			$memoryLimit = ini_get('memory_limit');
-			$usePhpIni = true;
+		$use_php_ini = false;
+		if( !$memory_limit ) {
+			$memory_limit = ini_get('memory_limit');
+			$use_php_ini = true;
 		}
 
-		if( $memoryLimit == -1 ) {
+		if( $memory_limit == -1 ) {
 			return 0;
 		}
-		$unit = strtolower($memoryLimit[strlen($memoryLimit) - 1]);
+		$unit = strtolower($memory_limit[strlen($memory_limit) - 1]);
 		if( $unit === 'g' ) {
-			$memoryLimit = 1024 * (int)$memoryLimit;
+			$memory_limit = 1024 * (int)$memory_limit;
 		} else {
 			if( $unit === 'm' ) {
-				$memoryLimit = (int)$memoryLimit;
+				$memory_limit = (int)$memory_limit;
 			} else {
 				if( $unit === 'k' ) {
-					$memoryLimit = ((int)$memoryLimit / 1024);
+					$memory_limit = ((int)$memory_limit / 1024);
 				} else {
-					$memoryLimit = ((int)$memoryLimit / (1024 * 1024));
+					$memory_limit = ((int)$memory_limit / (1024 * 1024));
 				}
 			}
 		}
-		if( $memoryLimit < 30 ) {
-			$memoryLimit = 30;
+		if( $memory_limit < 30 ) {
+			$memory_limit = 30;
 		}
-		if( $usePhpIni ) {
-			$memoryLimit = (int)(0.8 * $memoryLimit);
+		if( $use_php_ini ) {
+			$memory_limit = (int)(0.8 * $memory_limit);
 		}
-		return $memoryLimit;
+		return $memory_limit;
 	}
 }

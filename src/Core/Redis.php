@@ -27,9 +27,9 @@ final class Redis {
 	}
 
 	/**
-	 * @return RedisSubscriber|null
+	 * @return RedisSubscriber
 	 */
-	public static function subscriber(): ?RedisSubscriber {
+	public static function subscriber(): RedisSubscriber {
 		if( !isset(self::$subscriber) ) {
 			self::$subscriber = new RedisSubscriber(createRedisConnector('tcp://' . self::$instance->config['url']));
 		}
@@ -108,7 +108,7 @@ final class Redis {
 	/**
 	 * Запускает callback, если блокировки нет
 	 * @param string   $key
-	 * @param callable $callback
+	 * @param callable(mixed ...$args): mixed $callback
 	 * @param int      $ttl
 	 * @param bool     $need_unlock
 	 */
@@ -130,7 +130,7 @@ final class Redis {
 	/**
 	 * Чтение / сохранение из кеша
 	 * @param string        $key
-	 * @param callable|null $func
+	 * @param callable(mixed ...$args): mixed|null $func
 	 * @param int           $ttl
 	 * @param bool          $renew
 	 * @param bool          $save_null

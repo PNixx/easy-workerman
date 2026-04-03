@@ -3,17 +3,21 @@
 namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Postgres\PostgresConnectionPool;
+use Amp\Postgres\PostgresResult;
 use Amp\Postgres\PostgresTransaction;
 use Monolog\Level;
 use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 
+/**
+ * @phpstan-type Params array<string, mixed>
+ */
 trait PostgresTrait {
 
 	abstract public function connection(): PostgresConnectionPool|PostgresTransaction;
 
 	/**
 	 * Создает транзакцию у подключения
-	 * @param callable $func
+	 * @param callable(PgTransaction): void $func
 	 * @throws \Throwable
 	 */
 	public function transaction(callable $func): void {
@@ -35,18 +39,18 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param string   $table
-	 * @param array    $params
-	 * @param string[] $columns
-	 * @return array|null
+	 * @param non-empty-string $table
+	 * @param Params           $params
+	 * @param string[]         $columns
+	 * @return array<non-empty-string, mixed>|null
 	 */
-	public function find_by(string $table, array $params = [], array $columns = ['*']): ?array {
-		return current($this->select($table, $params, $columns, 1)) ?: null;
+	public function find_by(string $table, array $params = [], array $columns = ['*'], ?string $order = null): ?array {
+		return $this->select($table, $params, $columns, 1, null, $order)->fetchRow();
 	}
 
 	/**
-	 * @param string $table
-	 * @param array  $params
+	 * @param non-empty-string $table
+	 * @param Params           $params
 	 * @return bool
 	 */
 	public function exists(string $table, array $params): bool {
@@ -54,8 +58,8 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param string $table
-	 * @param array  $params
+	 * @param non-empty-string $table
+	 * @param Params           $params
 	 * @return int
 	 */
 	public function count(string $table, array $params = []): int {
@@ -63,33 +67,32 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param string      $table
-	 * @param array       $params
-	 * @param bool        $return
-	 * @param string|null $on_conflict
-	 * @return array|null
+	 * @param non-empty-string $table
+	 * @param Params           $params
+	 * @param bool             $return
+	 * @param string|null      $on_conflict
+	 * @return array<non-empty-string, scalar|list<mixed>|null>|null
 	 */
 	public function insert(string $table, array $params, bool $return = false, ?string $on_conflict = null): ?array {
-		$result = $this->execute('INSERT INTO "' . $table . '" (' . implode(',', array_map(Postgres::get()->connection()->quoteIdentifier(...), array_keys($params))) . ') VALUES (' . implode(',', array_map(fn($v) => ':' . $v, array_keys($params))) . ')' . ($on_conflict ? ' ON CONFLICT ' . $on_conflict : '') . ($return ? ' RETURNING *' : ''), $params, false);
-		if( $result ) {
-			return $result[0] ?? null;
-		}
-		return null;
+		$columns = implode(',', array_map(Postgres::get()->connection()->quoteIdentifier(...), array_keys($params)));
+		$values = implode(',', array_map(fn($v) => ':' . $v, array_keys($params)));
+		$result = $this->execute('INSERT INTO "' . $table . '" (' . $columns . ') VALUES (' . $values . ')' . ($on_conflict ? ' ON CONFLICT ' . $on_conflict : '') . ($return ? ' RETURNING *' : ''), $params, false);
+		return $result->fetchRow();
 	}
 
 	/**
-	 * @param string $table
-	 * @param array  $params
-	 * @return array
+	 * @param non-empty-string $table
+	 * @param Params           $params
+	 * @return int
 	 */
-	public function delete(string $table, array $params): array {
-		return $this->execute('DELETE FROM "' . $table . '" WHERE ' . $this->where($params), $params);
+	public function delete(string $table, array $params): int {
+		return $this->execute('DELETE FROM "' . $table . '" WHERE ' . $this->where($params), $params)->getRowCount();
 	}
 
 	/**
-	 * @param string $table
-	 * @param array  $update
-	 * @param array  $where
+	 * @param non-empty-string $table
+	 * @param Params           $update
+	 * @param Params           $where
 	 * @return int
 	 */
 	public function update(string $table, array $update, array $where): int {
@@ -119,15 +122,14 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param string $sql
-	 * @param array  $params
-	 * @param bool   $prepare_array Нужно ли конвертировать массивы для использования в select запроса с column IN (...)
-	 * @return array|null
+	 * @param non-empty-string $sql
+	 * @param Params           $params
+	 * @param bool             $prepare_array Нужно ли конвертировать массивы для использования в select запроса с column IN (...)
+	 * @return PostgresResult
 	 */
-	public function execute(string $sql, array $params = [], bool $prepare_array = true): ?array {
+	public function execute(string $sql, array $params = [], bool $prepare_array = true): PostgresResult {
 		$time = microtime(true);
 
-		//todo проверить
 		//Подготавливаем параметры, т.к. дефолтный метод не может работать с массивом
 		if( $prepare_array ) {
 			foreach( $params as $key => $value ) {
@@ -143,28 +145,48 @@ trait PostgresTrait {
 		//Пишем в лог
 		$this->log($time, $sql, $params);
 
-		return iterator_to_array($result);
+		return $result;
 	}
 
 	/**
-	 * @param string|Model $table
+	 * @param non-empty-string|Model $table
+	 * @param Params                 $params
+	 * @param array                  $columns
+	 * @param int|null               $limit
+	 * @param int|null               $offset
+	 * @param string|null            $order
+	 * @return PostgresResult
+	 */
+	//@phpstan-ignore missingType.generics
+	public function select(Model|string $table, array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): PostgresResult {
+		//Строим условие
+		$where = $this->where($params);
+		$table = ($table instanceof Model ? $table::$table : $table);
+
+		//Делаем запрос
+		return $this->execute('SELECT ' . implode(', ', $columns) . ' FROM "' . $table . '"' . ($where ? ' WHERE ' . $where : '') . ($order ? ' ORDER BY ' . $order : '') . ($limit ? ' LIMIT ' . $limit : '') . ($offset ? ' OFFSET ' . $offset : ''), $params);
+	}
+
+	/**
+	 * @param Model|non-empty-string $table
+	 * @param string       $column
 	 * @param array        $params
-	 * @param array        $columns
 	 * @param int|null     $limit
 	 * @param int|null     $offset
 	 * @param string|null  $order
-	 * @return array|null
+	 * @return array
 	 */
-	public function select(Model|string $table, array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): ?array {
-		//Строим условие
-		$where = $this->where($params);
-
-		//Делаем запрос
-		return $this->execute('SELECT ' . implode(', ', $columns) . ' FROM "' . ($table instanceof Model ? $table::$table : $table) . '"' . ($where ? ' WHERE ' . $where : '') . ($order ? ' ORDER BY ' . $order : '') . ($limit ? ' LIMIT ' . $limit : '') . ($offset ? ' OFFSET ' . $offset : ''), $params);
+	//@phpstan-ignore missingType.generics
+	public function pluck(Model|string $table, string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
+		$rows = [];
+		foreach( $this->select($table, $params, [$column], $limit, $offset, $order) as $row ) {
+			$rows[] = $row[$column];
+		}
+		return $rows;
 	}
 
 	/**
-	 * @param array $params
+	 * @param Params $params
 	 * @return string
 	 */
 	public function where(array $params): string {
@@ -180,10 +202,10 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param string $sql
-	 * @return array|null
+	 * @param non-empty-string $sql
+	 * @return PostgresResult
 	 */
-	public function query(string $sql): ?array {
+	public function query(string $sql): PostgresResult {
 		$time = microtime(true);
 
 		$result = $this->connection()->query($sql);
@@ -191,14 +213,14 @@ trait PostgresTrait {
 		//Пишем в лог
 		$this->log($time, $sql, []);
 
-		return iterator_to_array($result);
+		return $result;
 	}
 
 	/**
-	 * @param $value
+	 * @param mixed $value
 	 * @return float|int|string
 	 */
-	public static function escapeLiteral($value): float|int|string {
+	public static function escapeLiteral(mixed $value): float|int|string {
 		if( is_bool($value) ) {
 			return $value ? 'TRUE' : 'FALSE';
 		} elseif( is_null($value) ) {
@@ -214,7 +236,12 @@ trait PostgresTrait {
 		return $value;
 	}
 
-	private function log($start_time, $sql, $params): void {
+	/**
+	 * @param float|string     $start_time
+	 * @param non-empty-string $sql
+	 * @param Params           $params
+	 */
+	private function log(float|string $start_time, string $sql, array $params): void {
 		if( Logger::$logger->isHandling(Level::Debug) ) {
 			foreach( $params as $key => $value ) {
 				if( !($value instanceof ArelInterface) ) {

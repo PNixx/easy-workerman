@@ -100,14 +100,14 @@ class Init {
 	}
 
 	/**
-	 * @param $severity
-	 * @param $message
-	 * @param $filename
-	 * @param $lineno
+	 * @param int    $severity
+	 * @param string $message
+	 * @param string $filename
+	 * @param int    $lineno
 	 * @return bool
 	 * @throws \ErrorException
 	 */
-	public static function errorHandler($severity, $message, $filename, $lineno): bool {
+	public static function errorHandler(int $severity, string $message, string $filename, int $lineno): bool {
 		if( error_reporting() == 0 ) {
 			return false;
 		}

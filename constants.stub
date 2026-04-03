@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * @var string
+ */
+const APP_ROOT = __DIR__;
+
+/**
+ * @var array<array-key, mixed>
+ */
+define('CONFIG', (array) $__runtime);

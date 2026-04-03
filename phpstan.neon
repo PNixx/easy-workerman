@@ -1,0 +1,23 @@
+includes:
+  - phar://phpstan.phar/conf/bleedingEdge.neon
+rules:
+	- PereOrga\PHPStanRules\Rules\SnakeCaseVariableRule
+	- PereOrga\PHPStanRules\Rules\SnakeCaseParameterRule
+parameters:
+  level: 6
+  scanFiles:
+    - constants.stub
+  phpVersion:
+    min: 80200
+    max: 80400
+  paths:
+    - src/
+  tipsOfTheDay: false
+  checkMissingCallableSignature: true
+  reportUnmatchedIgnoredErrors: false
+  treatPhpDocTypesAsCertain: false
+  ignoreErrors:
+  	-
+  	  identifier: missingType.iterableValue
+  	-
+  	  identifier: new.staticInAbstractClassStaticMethod

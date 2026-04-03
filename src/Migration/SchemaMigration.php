@@ -73,6 +73,7 @@ class SchemaMigration extends Migration {
 	 */
 	public function create(): void {
 		echo 'Write unique class name, for example: CreateUser: ';
+		static $argv;
 		$name = $argv[2] ?? readline();
 		if( empty($name) ) {
 			Logger::$logger->alert('Empty, skipped');
@@ -134,7 +135,7 @@ PHP;
 	 * @return array
 	 */
 	protected function versions(): array {
-		return array_column($this->driver()->select(self::TABLE, [], ['version']), 'version');
+		return array_column(iterator_to_array($this->driver()->select(self::TABLE, [], ['version'])), 'version');
 	}
 
 	/**

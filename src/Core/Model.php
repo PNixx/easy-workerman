@@ -4,7 +4,6 @@ namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Cache\CacheException;
 use ArrayAccess;
-use JetBrains\PhpStorm\Immutable;
 use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
@@ -13,28 +12,21 @@ use Nixx\EasyWorkerman\Error\NotFoundError;
  * @implements ArrayAccess<key-of<TData>, mixed>
  */
 abstract class Model implements ArrayAccess {
+	/** @var non-empty-string $table */
 	public static string $table;
 	public static string $primary_key = 'id';
-
-	/**
-	 * @var array
-	 */
-	protected array $data;
 
 	/**
 	 * Данные которые были обновлены
 	 * @var array<key-of<TData>, mixed>
 	 */
-	#[Immutable(Immutable::PROTECTED_WRITE_SCOPE)]
-	public array $changed_data = [];
+	protected array $changed_data = [];
 
 	/**
 	 * Model constructor.
 	 * @param array<key-of<TData>, mixed> $data
 	 */
-	public function __construct(array $data) {
-		$this->data = $data;
-	}
+	final public function __construct(protected array $data) {}
 
 	/**
 	 * @return mixed
@@ -73,9 +65,9 @@ abstract class Model implements ArrayAccess {
 	/**
 	 * Заменяет данные
 	 * @param string $field
-	 * @param        $value
+	 * @param mixed  $value
 	 */
-	public function setField(string $field, $value): void {
+	public function setField(string $field, mixed $value): void {
 		if( !array_key_exists($field, $this->data) || $this->data[$field] !== $value ) {
 			$this->data[$field] = $value;
 			$this->changed_data[$field] = $value;
@@ -114,9 +106,9 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @return array
+	 * @return int
 	 */
-	public function delete(): array {
+	public function delete(): int {
 		$result = Postgres::get()->delete(static::$table, $this->getPrimaryKeyParams());
 		$this->clearCache();
 		return $result;
@@ -137,6 +129,16 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
+	 * @param TData $data
+	 * @return static
+	 */
+	protected static function build(array $data): static {
+		/** @var static<TData> $model */
+		$model = new static($data);
+		return $model;
+	}
+
+	/**
 	 * Создание записи в таблице
 	 * @param array       $params
 	 * @param string|null $on_conflict
@@ -144,8 +146,8 @@ abstract class Model implements ArrayAccess {
 	 */
 	public static function insert(array $params, ?string $on_conflict = null): ?static {
 		$row = Postgres::get()->insert(static::$table, $params, true, $on_conflict);
-		if( $row ) {
-			return new static($row);
+		if( $row !== null ) {
+			return static::build($row);
 		}
 		return null;
 	}
@@ -162,18 +164,19 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array    $params
-	 * @param int|null $cache Используем ли кеш для чтения / записи
-	 * @param array    $columns
+	 * @param array       $params
+	 * @param int|null    $cache Используем ли кеш для чтения / записи
+	 * @param array       $columns
+	 * @param string|null $order
 	 * @return static
-	 * @throws NotFoundError
 	 * @throws CacheException
+	 * @throws NotFoundError
 	 */
-	public static function find_by(array $params, ?int $cache = null, array $columns = ['*']): static {
-		$func = fn() => Postgres::get()->find_by(static::$table, $params, $columns);
+	public static function find_by(array $params, ?int $cache = null, array $columns = ['*'], ?string $order = null): static {
+		$func = fn() => Postgres::get()->find_by(static::$table, $params, $columns, $order);
 
 		//Если можно искать в кеше
-		$key = static::getCacheKey($params);
+		$key = static::getCacheKey($params) . ($order ? ':order:' . $order : '');
 		if( $cache ) {
 			$result = Redis::cache($key, $func, $cache);
 		} else {
@@ -184,7 +187,7 @@ abstract class Model implements ArrayAccess {
 			throw new NotFoundError($key . ' not found');
 		}
 
-		return new static($result);
+		return static::build($result);
 	}
 
 	/**
@@ -196,7 +199,7 @@ abstract class Model implements ArrayAccess {
 	 * @throws NotFoundError
 	 */
 	public static function find_by_where(string $where, array $params, ?int $cache = null): static {
-		$func = fn() => current(Postgres::get()->execute('SELECT * FROM ' . static::$table . ' WHERE ' . $where . ' LIMIT 1', $params));
+		$func = fn() => Postgres::get()->execute('SELECT * FROM ' . static::$table . ' WHERE ' . $where . ' LIMIT 1', $params)->fetchRow();
 
 		//Если можно искать в кеше
 		$key = static::getCacheKey($params);
@@ -210,7 +213,7 @@ abstract class Model implements ArrayAccess {
 			throw new NotFoundError($key . ' not found');
 		}
 
-		return new static($result);
+		return static::build($result);
 	}
 
 	/**
@@ -219,10 +222,23 @@ abstract class Model implements ArrayAccess {
 	 * @param int|null    $limit
 	 * @param int|null    $offset
 	 * @param string|null $order
-	 * @return static[]
+	 * @return Collection<static>
 	 */
-	public static function select(array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
-		return array_map(fn($v) => new static($v), Postgres::get()->select(static::$table, $params, $columns, $limit, $offset, $order));
+	public static function select(array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): Collection {
+		$result = Postgres::get()->select(static::$table, $params, $columns, $limit, $offset, $order);
+		return new Collection($result, static::class);
+	}
+
+	/**
+	 * @param non-empty-string $column
+	 * @param array            $params
+	 * @param int|null         $limit
+	 * @param int|null         $offset
+	 * @param string|null      $order
+	 * @return array
+	 */
+	public static function pluck(string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
+		return Postgres::get()->pluck(static::$table, $column, $params, $limit, $offset, $order);
 	}
 
 	/**

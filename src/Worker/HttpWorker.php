@@ -10,6 +10,7 @@ use League\CLImate\CLImate;
 use Monolog\Level;
 use Nixx\EasyWorkerman\Core\Logger;
 use Nixx\EasyWorkerman\Error\RequestError;
+use SplObjectStorage;
 use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request;
 use Workerman\Protocols\Http\Response;
@@ -18,7 +19,8 @@ use Workerman\Worker;
 abstract class HttpWorker extends Worker {
 	use WorkerTrait;
 
-	private \SplObjectStorage $requests;
+	/** @var SplObjectStorage<TcpConnection, DeferredCancellation> $requests */
+	private SplObjectStorage $requests;
 	protected bool $worker_ready = false;
 
 	const METHOD_ALLOWED = ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'];
@@ -33,7 +35,7 @@ abstract class HttpWorker extends Worker {
 	 */
 	public function __construct(CLImate $cli, string $name, string $process_name, int $port, array $context = []) {
 		$this->configure($cli, $name, $process_name);
-		$this->requests = new \SplObjectStorage;
+		$this->requests = new SplObjectStorage;
 		parent::__construct('http://0.0.0.0:' . $port, $context);
 		$this->onMessage = [$this, 'onMessageReceived'];
 		$this->onClose = [$this, 'onClosed'];
@@ -150,6 +152,7 @@ abstract class HttpWorker extends Worker {
 		} catch (RequestError $e) {
 			return $this->failed($e->getMessage(), $e->getCode() ?: 400);
 		} catch (CancelledException $e) {
+			//@phpstan-ignore ternary.alwaysTrue
 			Logger::$logger->debug('CancelledException: ' . $e->getPrevious()?->getMessage() ?: $e->getMessage());
 			return new Response(417);
 		} catch (SqlException $e) {

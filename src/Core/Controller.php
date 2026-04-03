@@ -31,11 +31,11 @@ abstract class Controller {
 
 	/**
 	 * Json response
-	 * @param     $data
-	 * @param int $options
+	 * @param mixed $data
+	 * @param int   $options
 	 * @return Response
 	 */
-	protected function json($data, int $options = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE): Response {
+	protected function json(mixed $data, int $options = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE): Response {
 		return new Response(200, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, $options));
 	}
 }

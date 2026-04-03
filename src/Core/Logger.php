@@ -20,13 +20,11 @@ final class Logger {
 
 	private ?string $level;
 	private ?string $log_file;
-	private string $name;
 	public ?string $daemon;
 
 	public static \Monolog\Logger $logger;
 
-	#[Immutable(Immutable::PROTECTED_WRITE_SCOPE)]
-	public static ByteStream\WritableStream $writable;
+	protected static ByteStream\WritableStream $writable;
 
 	/**
 	 * Logger constructor.
@@ -34,10 +32,9 @@ final class Logger {
 	 * @param string  $name
 	 * @throws \Exception
 	 */
-	public function __construct(CLImate $cli, string $name) {
+	public function __construct(CLImate $cli, private readonly string $name) {
 		$this->level = $cli->arguments->get('log_level');
 		$this->log_file = $cli->arguments->get('log');
-		$this->name = $name;
 		$this->daemon = $cli->arguments->get('daemon');
 
 		if( $this->daemon ) {
