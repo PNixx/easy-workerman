@@ -3,6 +3,8 @@
 namespace Nixx\EasyWorkerman\Worker;
 
 use Amp\Cancellation;
+use Amp\CompositeCancellation;
+use Amp\TimeoutCancellation;
 use League\CLImate\CLImate;
 use Nixx\EasyWorkerman\Core\Controller;
 use Nixx\EasyWorkerman\Error\NotFoundError;
@@ -16,8 +18,10 @@ abstract class ApiWorker extends HttpWorker {
 	 * @param CLImate $cli
 	 * @param string  $name
 	 * @param int     $port
+	 * @param array   $context
+	 * @param int     $api_timeout
 	 */
-	public function __construct(CLImate $cli, string $name, int $port, array $context = []) {
+	public function __construct(CLImate $cli, string $name, int $port, array $context = [], private readonly int $api_timeout = 10) {
 		parent::__construct($cli, 'API', $name, $port, $context);
 	}
 
@@ -34,7 +38,7 @@ abstract class ApiWorker extends HttpWorker {
 			$route = $this->route($method, $path);
 
 			/** @var Controller $controller */
-			$controller = new $route[0]($params, $request);
+			$controller = new $route[0]($params, $request, new CompositeCancellation($cancellation, new TimeoutCancellation($this->api_timeout, 'Long request, breaking')));
 
 			//Check action is existing
 			if( !method_exists($controller, $route[1]) ) {
@@ -49,6 +53,7 @@ abstract class ApiWorker extends HttpWorker {
 			//Execute action
 			if( !in_array($route[1], $controller->skipBeforeAction) ) {
 				$controller->beforeAction();
+				$cancellation->throwIfRequested();
 			}
 			$result = $controller->{$route[1]}(...$route['vars']);
 

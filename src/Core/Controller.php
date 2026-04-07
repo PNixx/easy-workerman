@@ -2,6 +2,7 @@
 
 namespace Nixx\EasyWorkerman\Core;
 
+use Amp\Cancellation;
 use Workerman\Protocols\Http\Request;
 use Workerman\Protocols\Http\Response;
 
@@ -11,7 +12,7 @@ abstract class Controller {
 	public ?string $title = null;
 	public array $skipBeforeAction = [];
 
-	final public function __construct(public readonly array $params, public readonly Request $request) {
+	final public function __construct(public readonly array $params, public readonly Request $request, protected readonly Cancellation $cancellation) {
 		$this->locale = $this->params['locale'] ?? 'en';
 	}
 
