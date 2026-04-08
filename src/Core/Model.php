@@ -242,11 +242,13 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array $params
+	 * @param array    $params
+	 * @param int|null $ttl
 	 * @return bool
+	 * @throws CacheException
 	 */
-	public static function exists(array $params): bool {
-		return Postgres::get()->exists(static::$table, $params);
+	public static function exists(array $params, ?int $ttl = null): bool {
+		return Redis::cache('exists:' . static::getCacheKey($params), fn() => Postgres::get()->exists(static::$table, $params), $ttl, false, true);
 	}
 
 	/**
