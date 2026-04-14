@@ -102,7 +102,9 @@ trait PostgresTrait {
 		foreach( $update as $k => $v ) {
 			$update_params['update_' . $k] = $v;
 		}
-		$sql = 'UPDATE "' . $table . '" SET ' . implode(', ', array_map(fn($k) => Postgres::get()->connection()->quoteIdentifier($k) . ' = :update_' . $k, array_keys($update))) . ($where ? ' WHERE ' . $this->where($where) : '');
+		$sql = 'UPDATE "' . $table . '" SET ' . implode(', ', array_map(fn($k) => Postgres::get()
+					->connection()
+					->quoteIdentifier($k) . ' = :update_' . $k, array_keys($update))) . ($where ? ' WHERE ' . $this->where($where) : '');
 		$params = array_merge($update_params, $where);
 
 		//Подготавливаем параметры, т.к. дефолтный метод не может работать с массивом
@@ -149,31 +151,57 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param non-empty-string|Model $table
-	 * @param Params                 $params
-	 * @param array                  $columns
-	 * @param int|null               $limit
-	 * @param int|null               $offset
-	 * @param string|null            $order
+	 * @param non-empty-string      $table
+	 * @param Params                $params
+	 * @param array                 $columns
+	 * @param int|null              $limit
+	 * @param int|null              $offset
+	 * @param non-empty-string|null $order
+	 * @param non-empty-string|null $group
 	 * @return PostgresResult
 	 */
-	//@phpstan-ignore missingType.generics
-	public function select(Model|string $table, array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): PostgresResult {
+	public function select(string $table, array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): PostgresResult {
 		//Строим условие
 		$where = $this->where($params);
-		$table = ($table instanceof Model ? $table::$table : $table);
+
+		$query = [
+			'SELECT',
+			implode(', ', $columns),
+			'FROM',
+			'"' . $table . '"',
+		];
+
+		if( $where ) {
+			$query[] = 'WHERE ' . $where;
+		}
+
+		if( $group ) {
+			$query[] = 'GROUP BY ' . $group;
+		}
+
+		if( $order ) {
+			$query[] = 'ORDER BY ' . $order;
+		}
+
+		if( $limit ) {
+			$query[] = 'LIMIT ' . $limit;
+		}
+
+		if( $offset ) {
+			$query[] = 'OFFSET ' . $offset;
+		}
 
 		//Делаем запрос
-		return $this->execute('SELECT ' . implode(', ', $columns) . ' FROM "' . $table . '"' . ($where ? ' WHERE ' . $where : '') . ($order ? ' ORDER BY ' . $order : '') . ($limit ? ' LIMIT ' . $limit : '') . ($offset ? ' OFFSET ' . $offset : ''), $params);
+		return $this->execute(implode(' ', $query), $params);
 	}
 
 	/**
 	 * @param Model|non-empty-string $table
-	 * @param string       $column
-	 * @param array        $params
-	 * @param int|null     $limit
-	 * @param int|null     $offset
-	 * @param string|null  $order
+	 * @param string                 $column
+	 * @param array                  $params
+	 * @param int|null               $limit
+	 * @param int|null               $offset
+	 * @param string|null            $order
 	 * @return array
 	 */
 	//@phpstan-ignore missingType.generics

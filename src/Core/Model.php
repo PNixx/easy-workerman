@@ -217,15 +217,16 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array       $params
-	 * @param array       $columns
-	 * @param int|null    $limit
-	 * @param int|null    $offset
-	 * @param string|null $order
+	 * @param array                 $params
+	 * @param array                 $columns
+	 * @param int|null              $limit
+	 * @param int|null              $offset
+	 * @param non-empty-string|null $order
+	 * @param non-empty-string|null $group
 	 * @return Collection<static>
 	 */
-	public static function select(array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null): Collection {
-		$result = Postgres::get()->select(static::$table, $params, $columns, $limit, $offset, $order);
+	public static function select(array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): Collection {
+		$result = Postgres::get()->select(static::$table, $params, $columns, $limit, $offset, $order, $group);
 		return new Collection($result, static::class);
 	}
 
@@ -249,7 +250,7 @@ abstract class Model implements ArrayAccess {
 	 */
 	public static function exists(array $params, ?int $ttl = null): bool {
 		$func = fn() => Postgres::get()->exists(static::$table, $params);
-		if ($ttl !== null) {
+		if( $ttl !== null ) {
 			return Redis::cache('exists:' . static::getCacheKey($params), $func, $ttl, false, true);
 		}
 		return $func();

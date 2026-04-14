@@ -8,6 +8,7 @@ use Amp\Postgres\PostgresConnectionPool;
 use Amp\Postgres\PostgresTransaction;
 use Nixx\EasyWorkerman\Core\Arel;
 use Nixx\EasyWorkerman\Core\PostgresTrait;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 
 class PostgresTestMock {
@@ -20,43 +21,49 @@ class PostgresTestMock {
 
 class QueryBuilderTest extends TestCase {
 
-	protected PostgresTestMock $postgres;
+	/** @var MockObject|PostgresTestMock */
+	protected PostgresTestMock|MockObject $postgres;
 
 	protected function setUp(): void {
 		$this->postgres = $this->getMockBuilder(PostgresTestMock::class)->onlyMethods(['execute'])->getMock();
 	}
 
-	public function testSelect() {
+	public function testSelect(): void {
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE id = :id', ['id' => 1]);
 		$this->postgres->select('events', ['id' => 1]);
 	}
 
-	public function testSelectOperator() {
+	public function testSelectOperator(): void {
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE id < 1', ['id' => new Arel\Operator('<', 1)]);
 		$this->postgres->select('events', ['id' => new Arel\Operator('<', 1)]);
 	}
 
-	public function testSelectRaw() {
+	public function testSelectRaw(): void {
 		$args = ['query' => new Arel\Raw('strpos(lower(c), :query) > 0')];
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE strpos(lower(c), :query) > 0', $args);
 		$this->postgres->select('events', $args);
 	}
 
-	public function testSelectRawWithValue() {
+	public function testSelectRawWithValue(): void {
 		$args = ['query' => new Arel\Raw('strpos(lower(c), :query) > 0', 'test')];
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE strpos(lower(c), :query) > 0', ['query' => 'test']);
 		$this->postgres->select('events', $args);
 	}
 
-	public function testSelectNotNull() {
+	public function testSelectNotNull(): void {
 		$args = ['query' => new Arel\NotNull()];
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE query IS NOT NULL', $args);
 		$this->postgres->select('events', $args);
 	}
 
-	public function testSelectBetween() {
+	public function testSelectBetween(): void {
 		$args = ['query' => new Arel\Between(1, 5)];
 		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE query BETWEEN 1 AND 5', $args);
 		$this->postgres->select('events', $args);
+	}
+
+	public function testGroup(): void {
+		$this->postgres->expects($this->once())->method('execute')->with('SELECT * FROM "events" WHERE id = :id GROUP BY event_id', ['id' => 1]);
+		$this->postgres->select('events', ['id' => 1], group: 'event_id');
 	}
 }
