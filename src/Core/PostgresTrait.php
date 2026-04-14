@@ -201,13 +201,14 @@ trait PostgresTrait {
 	 * @param array                  $params
 	 * @param int|null               $limit
 	 * @param int|null               $offset
-	 * @param string|null            $order
+	 * @param non-empty-string|null  $order
+	 * @param non-empty-string|null  $group
 	 * @return array
 	 */
 	//@phpstan-ignore missingType.generics
-	public function pluck(Model|string $table, string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
+	public function pluck(Model|string $table, string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): array {
 		$rows = [];
-		foreach( $this->select($table, $params, [$column], $limit, $offset, $order) as $row ) {
+		foreach( $this->select($table, $params, [$column], $limit, $offset, $order, $group) as $row ) {
 			$rows[] = $row[$column];
 		}
 		return $rows;

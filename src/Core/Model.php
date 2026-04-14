@@ -231,15 +231,16 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param non-empty-string $column
-	 * @param array            $params
-	 * @param int|null         $limit
-	 * @param int|null         $offset
-	 * @param string|null      $order
+	 * @param non-empty-string      $column
+	 * @param array                 $params
+	 * @param int|null              $limit
+	 * @param int|null              $offset
+	 * @param non-empty-string|null $order
+	 * @param non-empty-string|null $group
 	 * @return array
 	 */
-	public static function pluck(string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null): array {
-		return Postgres::get()->pluck(static::$table, $column, $params, $limit, $offset, $order);
+	public static function pluck(string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): array {
+		return Postgres::get()->pluck(static::$table, $column, $params, $limit, $offset, $order, $group);
 	}
 
 	/**
