@@ -203,6 +203,6 @@ abstract class HttpWorker extends Worker {
 	 * @return Response
 	 */
 	protected function response(int $status, array $data): Response {
-		return new Response($status, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE));
+		return new Response($status, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE | JSON_PRESERVE_ZERO_FRACTION));
 	}
 }
