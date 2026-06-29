@@ -41,6 +41,7 @@
   },
   "require-dev": {
     "phpunit/phpunit": "*",
+    "phpstan/phpstan": "^2.1",
     "pereorga/phpstan-rules": "^1.0.3"
   },
   "scripts": {

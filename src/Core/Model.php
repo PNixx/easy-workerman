@@ -9,7 +9,7 @@ use Nixx\EasyWorkerman\Error\NotFoundError;
 
 /**
  * @template TData of array<array-key, mixed>
- * @implements ArrayAccess<key-of<TData>, mixed>
+ * @implements ArrayAccess<key-of<TData>, TData[key-of<TData>]>
  */
 abstract class Model implements ArrayAccess {
 	/** @var non-empty-string $table */
@@ -42,22 +42,39 @@ abstract class Model implements ArrayAccess {
 	public function getData(): array {
 		return $this->data;
 	}
-
+	
+	/**
+	 * @param key-of<TData> $offset
+	 * @param TData[key-of<TData>] $value
+	 */
 	public function offsetSet(mixed $offset, mixed $value): void {
 		if( !array_key_exists($offset, $this->data) ) {
 			throw new \InvalidArgumentException('Cannot modify non-existent property "' . $offset . '".');
 		}
 		$this->setField($offset, $value);
 	}
-
+	
+	/**
+	 * @template TKey of key-of<TData>
+	 * @param TKey $offset
+	 */
 	public function offsetExists($offset): bool {
 		return array_key_exists($offset, $this->data);
 	}
-
+	
+	/**
+	 * @template TKey of key-of<TData>
+	 * @param TKey $offset
+	 */
 	public function offsetUnset($offset): void {
 		throw new \InvalidArgumentException('Cannot modify non-existent property "' . $offset . '".');
 	}
 
+	/**
+	 * @template TKey of key-of<TData>
+	 * @param TKey $offset
+	 * @return TData[TKey]
+	 */
 	public function offsetGet($offset): mixed {
 		return $this->data[$offset];
 	}
