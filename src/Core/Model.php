@@ -159,7 +159,7 @@ abstract class Model implements ArrayAccess {
 	 * Создание записи в таблице
 	 * @param array       $params
 	 * @param string|null $on_conflict
-	 * @return static|null
+	 * @return ($on_conflict is null ? static : static|null)
 	 */
 	public static function insert(array $params, ?string $on_conflict = null): ?static {
 		$row = Postgres::get()->insert(static::$table, $params, true, $on_conflict);
