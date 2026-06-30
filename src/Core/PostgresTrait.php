@@ -10,6 +10,7 @@ use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 
 /**
  * @phpstan-type Params array<string, mixed>
+ * @phpstan-type PostgresTraitResult array<non-empty-string, scalar|list<mixed>|null>
  */
 trait PostgresTrait {
 
@@ -71,7 +72,7 @@ trait PostgresTrait {
 	 * @param Params           $params
 	 * @param bool             $return
 	 * @param string|null      $on_conflict
-	 * @return array<non-empty-string, scalar|list<mixed>|null>|null
+	 * @return ($return is true ? ($on_conflict is null ? PostgresTraitResult : PostgresTraitResult|null) : PostgresTraitResult|null)
 	 */
 	public function insert(string $table, array $params, bool $return = false, ?string $on_conflict = null): ?array {
 		$columns = implode(',', array_map(Postgres::get()->connection()->quoteIdentifier(...), array_keys($params)));
