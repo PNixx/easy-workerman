@@ -8,7 +8,7 @@ use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
 /**
- * @template TData of array<non-empty-string, scalar|list<mixed>|null>
+ * @template TData of array<string, scalar|list<mixed>|null>
  * @implements ArrayAccess<key-of<TData>, TData[key-of<TData>]>
  */
 abstract class Model implements ArrayAccess {
