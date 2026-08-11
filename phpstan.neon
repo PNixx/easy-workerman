@@ -4,7 +4,7 @@ rules:
 	- PereOrga\PHPStanRules\Rules\SnakeCaseVariableRule
 	- PereOrga\PHPStanRules\Rules\SnakeCaseParameterRule
 parameters:
-  level: 6
+  level: 8
   scanFiles:
     - constants.stub
   phpVersion:

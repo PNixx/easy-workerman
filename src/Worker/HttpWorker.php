@@ -122,6 +122,7 @@ abstract class HttpWorker extends Worker {
 	 * @param Request      $request
 	 * @param Cancellation $cancellation
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	public function execute(Request $request, Cancellation $cancellation): Response {
 		try {
@@ -167,6 +168,7 @@ abstract class HttpWorker extends Worker {
 	/**
 	 * @param array|null $data
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	protected function success(?array $data): Response {
 		if( is_null($data) ) {
@@ -176,9 +178,10 @@ abstract class HttpWorker extends Worker {
 	}
 
 	/**
-	 * @param mixed   $message
-	 * @param int     $status
+	 * @param mixed $message
+	 * @param int   $status
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	protected function failed(mixed $message, int $status = 400): Response {
 		return $this->response($status, ['status' => 'error', 'message' => $message]);
@@ -188,6 +191,7 @@ abstract class HttpWorker extends Worker {
 	 * @param \Throwable  $e
 	 * @param string|null $message
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	protected function error(\Throwable $e, ?string $message = null): Response {
 		return $this->response(500, array_filter([
@@ -201,8 +205,9 @@ abstract class HttpWorker extends Worker {
 	 * @param int   $status
 	 * @param array $data
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	protected function response(int $status, array $data): Response {
-		return new Response($status, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE | JSON_PRESERVE_ZERO_FRACTION));
+		return new Response($status, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE | JSON_PRESERVE_ZERO_FRACTION | JSON_THROW_ON_ERROR));
 	}
 }

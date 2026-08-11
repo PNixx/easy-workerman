@@ -16,8 +16,11 @@ final readonly class Collection implements \IteratorAggregate, \JsonSerializable
 	 */
 	public function __construct(protected PostgresResult $result, protected string $class) {}
 
+	/**
+	 * @return int
+	 */
 	public function count(): int {
-		return $this->result->getRowCount();
+		return (int)$this->result->getRowCount();
 	}
 
 	public function jsonSerialize(): array {

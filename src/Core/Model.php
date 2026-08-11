@@ -8,7 +8,7 @@ use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
 /**
- * @template TData of array<array-key, mixed>
+ * @template TData of array<non-empty-string, scalar|list<mixed>|null>
  * @implements ArrayAccess<key-of<TData>, TData[key-of<TData>]>
  */
 abstract class Model implements ArrayAccess {
@@ -42,9 +42,9 @@ abstract class Model implements ArrayAccess {
 	public function getData(): array {
 		return $this->data;
 	}
-	
+
 	/**
-	 * @param key-of<TData> $offset
+	 * @param array-key $offset
 	 * @param TData[key-of<TData>] $value
 	 */
 	public function offsetSet(mixed $offset, mixed $value): void {
@@ -53,7 +53,7 @@ abstract class Model implements ArrayAccess {
 		}
 		$this->setField($offset, $value);
 	}
-	
+
 	/**
 	 * @template TKey of key-of<TData>
 	 * @param TKey $offset
@@ -61,7 +61,7 @@ abstract class Model implements ArrayAccess {
 	public function offsetExists($offset): bool {
 		return array_key_exists($offset, $this->data);
 	}
-	
+
 	/**
 	 * @template TKey of key-of<TData>
 	 * @param TKey $offset
@@ -80,11 +80,21 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
+	 * @template TKey of key-of<TData>
+	 * @param array<TKey, mixed> $data
+	 */
+	public function assignAttributes(array $data): void {
+		foreach ($data as $key => $value) {
+			$this[$key] = $value;
+		}
+	}
+
+	/**
 	 * Заменяет данные
-	 * @param string $field
+	 * @param key-of<TData> $field
 	 * @param mixed  $value
 	 */
-	public function setField(string $field, mixed $value): void {
+	protected function setField(string $field, mixed $value): void {
 		if( !array_key_exists($field, $this->data) || $this->data[$field] !== $value ) {
 			$this->data[$field] = $value;
 			$this->changed_data[$field] = $value;
@@ -147,21 +157,21 @@ abstract class Model implements ArrayAccess {
 
 	/**
 	 * @param TData $data
-	 * @return static
+	 * @return static<TData>
 	 */
 	protected static function build(array $data): static {
-		/** @var static<TData> $model */
-		$model = new static($data);
-		return $model;
+		/** @var static<TData> */
+		return new static($data);
 	}
 
 	/**
 	 * Создание записи в таблице
 	 * @param array       $params
 	 * @param string|null $on_conflict
-	 * @return ($on_conflict is null ? static : static|null)
+	 * @return ($on_conflict is null ? static<TData> : static<TData>|null)
 	 */
 	public static function insert(array $params, ?string $on_conflict = null): ?static {
+		/** @var TData|null $row */
 		$row = Postgres::get()->insert(static::$table, $params, true, $on_conflict);
 		if( $row !== null ) {
 			return static::build($row);
@@ -170,8 +180,8 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param int|string $primary_key
-	 * @param int|null   $ttl
+	 * @param int|string       $primary_key
+	 * @param int<0, max>|null $ttl
 	 * @return static
 	 * @throws CacheException
 	 * @throws NotFoundError
@@ -181,10 +191,10 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array       $params
-	 * @param int|null    $cache Используем ли кеш для чтения / записи
-	 * @param array       $columns
-	 * @param string|null $order
+	 * @param array                 $params
+	 * @param int<0, max>|null      $cache Используем ли кеш для чтения / записи
+	 * @param array                 $columns
+	 * @param non-empty-string|null $order
 	 * @return static
 	 * @throws CacheException
 	 * @throws NotFoundError

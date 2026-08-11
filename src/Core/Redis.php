@@ -63,8 +63,12 @@ final class Redis {
 	 * @param int    $ttl
 	 */
 	public static function set(string $key, mixed $value, int $ttl = 60): void {
-		Redis::client()?->set($key, json_encode($value, JSON_UNESCAPED_UNICODE));
-		Redis::client()?->expireIn($key, $ttl);
+		try {
+			Redis::client()?->set($key, json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
+			Redis::client()?->expireIn($key, $ttl);
+		} catch (\JsonException $e) {
+			Logger::$logger->error('[Redis::set] ' . $e->getMessage());
+		}
 	}
 
 	/**
@@ -113,15 +117,19 @@ final class Redis {
 	 * @param bool     $need_unlock
 	 */
 	public static function lock(string $key, callable $callback, int $ttl = 300, bool $need_unlock = true): void {
-		$id = uniqid();
-		Redis::client()->setWithoutOverwrite($key, $id);
-		if( Redis::client()->get($key) == $id ) {
-			try {
-				Redis::client()->expireIn($key, $ttl);
-				call_user_func($callback);
-			} finally {
-				if( $need_unlock ) {
-					Redis::client()->delete($key);
+		if( Redis::client() === null ) {
+			call_user_func($callback);
+		} else {
+			$id = uniqid();
+			Redis::client()->setWithoutOverwrite($key, $id);
+			if( Redis::client()->get($key) == $id ) {
+				try {
+					Redis::client()->expireIn($key, $ttl);
+					call_user_func($callback);
+				} finally {
+					if( $need_unlock ) {
+						Redis::client()->delete($key);
+					}
 				}
 			}
 		}
@@ -139,6 +147,7 @@ final class Redis {
 	 */
 	public static function cache(string $key, ?callable $func = null, int $ttl = 60, bool $renew = false, bool $save_null = false): mixed {
 		$time = microtime(true);
+		/** @var string $key */
 		$key = preg_replace(['/[^[:print:]]/', '/\s+/'], ['', '_'], $key);
 		$result = Redis::client()?->get($key);
 		if( $result ) {

@@ -81,7 +81,7 @@ final class Monitor {
 		if( !Worker::getAllWorkers() ) {
 			return;
 		}
-		$disable_functions = explode(',', ini_get('disable_functions'));
+		$disable_functions = explode(',', (string)ini_get('disable_functions'));
 		if( in_array('exec', $disable_functions, true) ) {
 			echo "\nMonitor file change turned off because exec() has been disabled by disable_functions setting in " . PHP_CONFIG_FILE_PATH . "/php.ini\n";
 		} else {
@@ -205,20 +205,22 @@ final class Monitor {
 			$use_php_ini = true;
 		}
 
-		if( $memory_limit == -1 ) {
+		if( $memory_limit === -1 ) {
 			return 0;
 		}
-		$unit = strtolower($memory_limit[strlen($memory_limit) - 1]);
-		if( $unit === 'g' ) {
-			$memory_limit = 1024 * (int)$memory_limit;
-		} else {
-			if( $unit === 'm' ) {
-				$memory_limit = (int)$memory_limit;
+		if( is_string($memory_limit) ) {
+			$unit = strtolower($memory_limit[strlen($memory_limit) - 1]);
+			if( $unit === 'g' ) {
+				$memory_limit = 1024 * (int)$memory_limit;
 			} else {
-				if( $unit === 'k' ) {
-					$memory_limit = ((int)$memory_limit / 1024);
+				if( $unit === 'm' ) {
+					$memory_limit = (int)$memory_limit;
 				} else {
-					$memory_limit = ((int)$memory_limit / (1024 * 1024));
+					if( $unit === 'k' ) {
+						$memory_limit = ((int)$memory_limit / 1024);
+					} else {
+						$memory_limit = ((int)$memory_limit / (1024 * 1024));
+					}
 				}
 			}
 		}

@@ -33,17 +33,18 @@ abstract class Controller {
 	/**
 	 * Json response
 	 * @param mixed $data
-	 * @param int   $options
+	 * @param int $options
 	 * @return Response
+	 * @throws \JsonException
 	 */
 	protected function json(mixed $data, int $options = JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_IGNORE): Response {
-		return new Response(200, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, $options));
+		return new Response(200, ['Content-Type' => 'application/json; charset=utf-8'], json_encode($data, $options | JSON_THROW_ON_ERROR));
 	}
 
 	/**
 	 * @return string
 	 */
 	protected function getRealIP(): string {
-		return $this->request->header('x-real-ip') ?: $this->request->connection->getRemoteIp();
+		return $this->request->header('x-real-ip') ?: $this->request->connection?->getRemoteIp() ?? '';
 	}
 }

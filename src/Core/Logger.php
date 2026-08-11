@@ -8,6 +8,7 @@ use Amp\ByteStream;
 use JetBrains\PhpStorm\Immutable;
 use League\CLImate\CLImate;
 use Monolog\Formatter\LineFormatter;
+use Monolog\Level;
 
 final class Logger {
 
@@ -18,7 +19,8 @@ final class Logger {
 	const FORMAT = '[%datetime%] %channel%.%level_name%: %message% %context% %extra%' . PHP_EOL;
 	const DATE_FORMAT = 'Y-m-d H:i:s.v';
 
-	private ?string $level;
+	/** @var Logger::TYPE_* */
+	private string $level;
 	private ?string $log_file;
 	public ?string $daemon;
 
@@ -33,13 +35,15 @@ final class Logger {
 	 * @throws \Exception
 	 */
 	public function __construct(CLImate $cli, private readonly string $name) {
-		$this->level = $cli->arguments->get('log_level');
-		$this->log_file = $cli->arguments->get('log');
-		$this->daemon = $cli->arguments->get('daemon');
+		$level = $cli->arguments->get('log_level');
+		$this->level = in_array($level, [self::TYPE_DEBUG, self::TYPE_INFO, self::TYPE_WARN, self::TYPE_ERROR], true) ? $level : Logger::TYPE_ERROR;
+		$this->log_file = (string)$cli->arguments->get('log') ?: null;
+		$this->daemon = (string)$cli->arguments->get('daemon');
 
-		if( $this->daemon ) {
-			if( !is_dir(pathinfo($this->log_file, PATHINFO_DIRNAME)) ) {
-				mkdir(pathinfo($this->log_file, PATHINFO_DIRNAME));
+		if( $this->daemon && $this->log_file !== null ) {
+			$dirname = pathinfo($this->log_file, PATHINFO_DIRNAME);
+			if( !is_dir($dirname) ) {
+				mkdir($dirname);
 			}
 			if( file_exists($this->log_file) && !is_writable($this->log_file) || !file_exists($this->log_file) && !is_writable(pathinfo($this->log_file, PATHINFO_DIRNAME)) ) {
 				throw new \Exception('Permission denied to write file: ' . $this->log_file);
@@ -53,10 +57,15 @@ final class Logger {
 	/**
 	 * @param string $format
 	 * @return \Monolog\Logger
+	 * @throws \Exception
 	 */
 	public function logger(string $format = Logger::FORMAT): \Monolog\Logger {
-		if( $this->daemon ) {
-			self::$writable = new ByteStream\WritableResourceStream(\fopen($this->log_file, 'a+'));
+		if( $this->daemon && $this->log_file !== null ) {
+			$stream = \fopen($this->log_file, 'a');
+			if( !$stream ) {
+				throw new \Exception('Permission denied to write file: ' . $this->log_file);
+			}
+			self::$writable = new ByteStream\WritableResourceStream($stream);
 			$handler = new StreamHandler(self::$writable);
 			$handler->setFormatter(new LineFormatter('[' . getmypid() . '] ' . $format, Logger::DATE_FORMAT, true));
 		} else {

@@ -40,12 +40,14 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param non-empty-string $table
-	 * @param Params           $params
-	 * @param string[]         $columns
-	 * @return array<non-empty-string, mixed>|null
+	 * @param non-empty-string      $table
+	 * @param Params                $params
+	 * @param string[]              $columns
+	 * @param non-empty-string|null $order
+	 * @return PostgresTraitResult|null
 	 */
 	public function find_by(string $table, array $params = [], array $columns = ['*'], ?string $order = null): ?array {
+		/** @var PostgresTraitResult|null */
 		return $this->select($table, $params, $columns, 1, null, $order)->fetchRow();
 	}
 
@@ -64,6 +66,7 @@ trait PostgresTrait {
 	 * @return int
 	 */
 	public function count(string $table, array $params = []): int {
+		/** @var int<0, max> */
 		return $this->find_by($table, $params, ['count(*) AS c'])['c'];
 	}
 
@@ -78,6 +81,7 @@ trait PostgresTrait {
 		$columns = implode(',', array_map(Postgres::get()->connection()->quoteIdentifier(...), array_keys($params)));
 		$values = implode(',', array_map(fn($v) => ':' . $v, array_keys($params)));
 		$result = $this->execute('INSERT INTO "' . $table . '" (' . $columns . ') VALUES (' . $values . ')' . ($on_conflict ? ' ON CONFLICT ' . $on_conflict : '') . ($return ? ' RETURNING *' : ''), $params, false);
+		/** @var PostgresTraitResult|null */
 		return $result->fetchRow();
 	}
 
@@ -87,7 +91,7 @@ trait PostgresTrait {
 	 * @return int
 	 */
 	public function delete(string $table, array $params): int {
-		return $this->execute('DELETE FROM "' . $table . '" WHERE ' . $this->where($params), $params)->getRowCount();
+		return (int)$this->execute('DELETE FROM "' . $table . '" WHERE ' . $this->where($params), $params)->getRowCount();
 	}
 
 	/**
@@ -111,7 +115,7 @@ trait PostgresTrait {
 		//Подготавливаем параметры, т.к. дефолтный метод не может работать с массивом
 		foreach( $where as $key => $value ) {
 			if( is_array($value) ) {
-				$sql = str_replace(':' . $key, Postgres::escapeLiteral($value), $sql);
+				$sql = str_replace(':' . $key, (string)Postgres::escapeLiteral($value), $sql);
 				unset($where[$key]);
 			}
 		}
@@ -121,7 +125,7 @@ trait PostgresTrait {
 		//Пишем в лог
 		$this->log($time, $sql, $params);
 
-		return $result->getRowCount();
+		return (int)$result->getRowCount();
 	}
 
 	/**
@@ -137,7 +141,7 @@ trait PostgresTrait {
 		if( $prepare_array ) {
 			foreach( $params as $key => $value ) {
 				if( is_array($value) ) {
-					$sql = str_replace(':' . $key, Postgres::escapeLiteral($value), $sql);
+					$sql = str_replace(':' . $key, (string)Postgres::escapeLiteral($value), $sql);
 					unset($params[$key]);
 				}
 			}
@@ -197,17 +201,16 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param Model|non-empty-string $table
-	 * @param string                 $column
-	 * @param array                  $params
-	 * @param int|null               $limit
-	 * @param int|null               $offset
-	 * @param non-empty-string|null  $order
-	 * @param non-empty-string|null  $group
+	 * @param non-empty-string      $table
+	 * @param string                $column
+	 * @param array                 $params
+	 * @param int|null              $limit
+	 * @param int|null              $offset
+	 * @param non-empty-string|null $order
+	 * @param non-empty-string|null $group
 	 * @return array
 	 */
-	//@phpstan-ignore missingType.generics
-	public function pluck(Model|string $table, string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): array {
+	public function pluck(string $table, string $column, array $params = [], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): array {
 		$rows = [];
 		foreach( $this->select($table, $params, [$column], $limit, $offset, $order, $group) as $row ) {
 			$rows[] = $row[$column];
@@ -267,15 +270,15 @@ trait PostgresTrait {
 	}
 
 	/**
-	 * @param float|string     $start_time
-	 * @param non-empty-string $sql
-	 * @param Params           $params
+	 * @param float  $start_time
+	 * @param string $sql
+	 * @param Params $params
 	 */
-	private function log(float|string $start_time, string $sql, array $params): void {
+	private function log(float $start_time, string $sql, array $params): void {
 		if( Logger::$logger->isHandling(Level::Debug) ) {
 			foreach( $params as $key => $value ) {
 				if( !($value instanceof ArelInterface) ) {
-					$sql = str_replace(':' . $key, self::escapeLiteral($value), $sql);
+					$sql = str_replace(':' . $key, (string)self::escapeLiteral($value), $sql);
 				}
 			}
 			if( str_contains($sql, 'SELECT ') ) {

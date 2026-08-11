@@ -143,10 +143,13 @@ PHP;
 	 */
 	protected function files(): array {
 		$files = [];
-		foreach( glob($this->directory . '/*.php') as $file ) {
-			$files[$this->version($file)] = $file;
+		$directory = glob($this->directory . '/*.php');
+		if( $directory !== false ) {
+			foreach($directory as $file) {
+				$files[$this->version($file)] = $file;
+			}
+			ksort($files);
 		}
-		ksort($files);
 		return $files;
 	}
 
@@ -155,7 +158,7 @@ PHP;
 	 * @return string
 	 */
 	protected function version(string $file): string {
-		return preg_replace('/^(\d+)_.*?$/', '$1', pathinfo($file, PATHINFO_FILENAME));
+		return preg_replace('/^(\d+)_.*?$/', '$1', pathinfo($file, PATHINFO_FILENAME)) ?? '';
 	}
 
 	/**
@@ -164,7 +167,7 @@ PHP;
 	 * @return string
 	 */
 	protected function name(string $file): string {
-		return preg_replace('/^\d+_(.*?)$/', '$1', pathinfo($file, PATHINFO_FILENAME));
+		return preg_replace('/^\d+_(.*?)$/', '$1', pathinfo($file, PATHINFO_FILENAME)) ?? '';
 	}
 
 	/**
@@ -182,14 +185,11 @@ PHP;
 	 */
 	protected function klass(string $file, PgTransaction $transaction): Migration {
 		require_once $file;
+		/** @var class-string<Migration> $class */
 		$class = $this->className($file);
 		return new $class($transaction);
 	}
 
-	/**
-	 * Create table
-	 * @return void
-	 */
 	public function up(): void {
 		$this->driver()->query('CREATE TABLE ' . self::TABLE . ' (version int PRIMARY KEY)');
 	}
