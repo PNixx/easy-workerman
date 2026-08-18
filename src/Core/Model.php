@@ -48,7 +48,7 @@ abstract class Model implements ArrayAccess {
 	 * @param TData[key-of<TData>] $value
 	 */
 	public function offsetSet(mixed $offset, mixed $value): void {
-		if( !array_key_exists($offset, $this->data) ) {
+		if( !$this->isNewRecord() && !array_key_exists($offset, $this->data) ) {
 			throw new \InvalidArgumentException('Cannot modify non-existent property "' . $offset . '".');
 		}
 		$this->setField($offset, $value);
@@ -182,7 +182,7 @@ abstract class Model implements ArrayAccess {
 	/**
 	 * @param int|string       $primary_key
 	 * @param int<0, max>|null $ttl
-	 * @return static
+	 * @return static<TData>
 	 * @throws CacheException
 	 * @throws NotFoundError
 	 */
@@ -191,30 +191,69 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
+	 * @param int|string       $primary_key
+	 * @param int<0, max>|null $ttl
+	 * @return static<TData>|null
+	 * @throws CacheException
+	 */
+	public static function tryFind(int|string $primary_key, ?int $ttl = null): ?static {
+		return static::tryFindBy([static::$primary_key => $primary_key], $ttl);
+	}
+
+	/**
 	 * @param array                 $params
 	 * @param int<0, max>|null      $cache Используем ли кеш для чтения / записи
 	 * @param array                 $columns
 	 * @param non-empty-string|null $order
-	 * @return static
+	 * @return static<TData>
 	 * @throws CacheException
 	 * @throws NotFoundError
 	 */
 	public static function find_by(array $params, ?int $cache = null, array $columns = ['*'], ?string $order = null): static {
+		return static::findBy($params, $cache, $columns, $order);
+	}
+
+	/**
+	 * @param array                 $params
+	 * @param int<0, max>|null      $cache Используем ли кеш для чтения / записи
+	 * @param array                 $columns
+	 * @param non-empty-string|null $order
+	 * @return static<TData>
+	 * @throws CacheException
+	 * @throws NotFoundError
+	 */
+	public static function findBy(array $params, ?int $cache = null, array $columns = ['*'], ?string $order = null): static {
+		$result = self::tryFindBy($params, $cache, $columns, $order);
+		if( $result === null ) {
+			$key = static::getCacheKey($params, $order);
+			throw new NotFoundError($key . ' not found');
+		}
+		return $result;
+	}
+
+	/**
+	 * @param array                 $params
+	 * @param int<0, max>|null      $cache Используем ли кеш для чтения / записи
+	 * @param array                 $columns
+	 * @param non-empty-string|null $order
+	 * @return static<TData>|null
+	 * @throws CacheException
+	 */
+	public static function tryFindBy(array $params, ?int $cache = null, array $columns = ['*'], ?string $order = null): ?static {
 		$func = fn() => Postgres::get()->find_by(static::$table, $params, $columns, $order);
 
 		//Если можно искать в кеше
-		$key = static::getCacheKey($params) . ($order ? ':order:' . $order : '');
+		$key = static::getCacheKey($params, $order);
 		if( $cache ) {
 			$result = Redis::cache($key, $func, $cache);
 		} else {
 			$result = $func();
 		}
-		//Ищем строку
-		if( empty($result) ) {
-			throw new NotFoundError($key . ' not found');
-		}
 
-		return static::build($result);
+		if( $result !== null && $result !== '' ) {
+			return static::build($result);
+		}
+		return null;
 	}
 
 	/**
@@ -293,11 +332,12 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array $params
+	 * @param array       $params
+	 * @param string|null $order
 	 * @return string
 	 */
-	final public static function getCacheKey(array $params): string {
-		return implode(':', [
+	final public static function getCacheKey(array $params, ?string $order = null): string {
+		$data = [
 			static::getClassName(),
 			...array_map(function($k, $v) {
 				if( $v instanceof ArelInterface ) {
@@ -305,6 +345,12 @@ abstract class Model implements ArrayAccess {
 				}
 				return $k . ':' . (is_array($v) ? implode(',', $v) : $v);
 			}, array_keys($params), $params),
-		]);
+		];
+
+		if( $order !== null ) {
+			$data[] = 'order:' . $order;
+		}
+
+		return implode(':', $data);
 	}
 }

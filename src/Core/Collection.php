@@ -28,14 +28,18 @@ final readonly class Collection implements \IteratorAggregate, \JsonSerializable
 	}
 
 	public function jsonSerialize(): array {
-		return array_map(fn(array $v) => new $this->class($v), iterator_to_array($this->result));
+		$rows = [];
+		foreach( $this->result as $row ) {
+			$rows[] = new $this->class($row);
+		}
+		return $rows;
 	}
 
 	/**
 	 * @return \Iterator<int, T>
 	 */
 	public function getIterator(): \Iterator {
-		foreach( $this->result as $row ) {
+		while (($row = $this->result->fetchRow()) !== null) {
 			yield new $this->class($row);
 		}
 	}
