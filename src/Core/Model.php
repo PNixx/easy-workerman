@@ -29,7 +29,7 @@ abstract class Model implements ArrayAccess {
 	final public function __construct(protected array $data) {}
 
 	/**
-	 * @return mixed
+	 * @return TData["id"]
 	 */
 	final public function id(): mixed {
 		return $this->data['_id'] ?? $this->data['id'] ?? null;
