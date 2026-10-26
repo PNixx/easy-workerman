@@ -53,7 +53,7 @@ abstract class HttpWorker extends Worker {
 	 */
 	public function onMessageReceived(TcpConnection $connection, Request $request): void {
 		$cancellation = new DeferredCancellation();
-		if( self::$status == self::STATUS_RUNNING && $this->worker_ready ) {
+		if( self::$status === self::STATUS_RUNNING && $this->worker_ready ) {
 			$this->requests->attach($connection, $cancellation);
 
 			//Делаем запрос
@@ -71,7 +71,7 @@ abstract class HttpWorker extends Worker {
 
 			//Закрываем коннект с ответом
 			$this->requests->detach($connection);
-			if( $connection->getStatus() == TcpConnection::STATUS_ESTABLISHED ) {
+			if( $connection->getStatus() === TcpConnection::STATUS_ESTABLISHED ) {
 				$connection->close($response);
 			}
 		} else {
@@ -138,13 +138,13 @@ abstract class HttpWorker extends Worker {
 					'Access-Control-Allow-Headers' => 'api,content-type,authorization',
 				]);
 			}
-			if( !in_array($request->method(), static::METHOD_ALLOWED) ) {
+			if( !in_array($request->method(), static::METHOD_ALLOWED, true) ) {
 				return new Response(405);
 			}
 
 			//Парсим параметры
 			parse_str($request->queryString(), $params);
-			if( $request->method() != 'GET' ) {
+			if( $request->method() !== 'GET' ) {
 				$params = array_merge($params, $request->post() ?: [], $request->file() ?: []);
 			}
 

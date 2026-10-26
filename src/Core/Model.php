@@ -4,11 +4,12 @@ namespace Nixx\EasyWorkerman\Core;
 
 use Amp\Cache\CacheException;
 use ArrayAccess;
+use JetBrains\PhpStorm\Pure;
 use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
 use Nixx\EasyWorkerman\Error\NotFoundError;
 
 /**
- * @template TData of array<string, scalar|list<mixed>|null>
+ * @template TData of array<non-empty-string, scalar|list<mixed>|null>
  * @implements ArrayAccess<key-of<TData>, TData[key-of<TData>]>
  */
 abstract class Model implements ArrayAccess {
@@ -44,10 +45,13 @@ abstract class Model implements ArrayAccess {
 	}
 
 	/**
-	 * @param array-key $offset
+	 * @param key-of<TData>|null $offset
 	 * @param TData[key-of<TData>] $value
 	 */
 	public function offsetSet(mixed $offset, mixed $value): void {
+		if( $offset === null ) {
+			throw new \InvalidArgumentException('Cannot append to model.');
+		}
 		if( !$this->isNewRecord() && !array_key_exists($offset, $this->data) ) {
 			throw new \InvalidArgumentException('Cannot modify non-existent property "' . $offset . '".');
 		}
@@ -81,17 +85,17 @@ abstract class Model implements ArrayAccess {
 
 	/**
 	 * @template TKey of key-of<TData>
-	 * @param array<TKey, mixed> $data
+	 * @param array<TKey, TData[TKey]> $data
 	 */
 	public function assignAttributes(array $data): void {
 		foreach ($data as $key => $value) {
-			$this[$key] = $value;
+			$this->offsetSet($key, $value);
 		}
 	}
 
 	/**
 	 * Заменяет данные
-	 * @param key-of<TData> $field
+	 * @param string&key-of<TData> $field
 	 * @param mixed  $value
 	 */
 	protected function setField(string $field, mixed $value): void {

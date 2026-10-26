@@ -42,7 +42,8 @@
   "require-dev": {
     "phpunit/phpunit": "*",
     "phpstan/phpstan": "^2.1",
-    "pereorga/phpstan-rules": "^1.0.3"
+    "pereorga/phpstan-rules": "^1.0.3",
+    "phpstan/phpstan-strict-rules": "^2.0"
   },
   "scripts": {
     "linter:check": "phpstan analyse --configuration phpstan.neon  --memory-limit 512M"

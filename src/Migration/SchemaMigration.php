@@ -19,7 +19,7 @@ class SchemaMigration extends Migration {
 		try {
 			$this->driver()->count(self::TABLE);
 		} catch (PostgresQueryError $e) {
-			if( $e->getDiagnostics()['sqlstate'] == '42P01' ) {
+			if( $e->getDiagnostics()['sqlstate'] === '42P01' ) {
 				$this->up();
 			} else {
 				throw $e;
@@ -73,17 +73,18 @@ class SchemaMigration extends Migration {
 	 */
 	public function create(): void {
 		echo 'Write unique class name, for example: CreateUser: ';
+		/** @var list<string> $argv */
 		static $argv;
 		$name = $argv[2] ?? readline();
-		if( empty($name) ) {
+		if( $name === false || $name === '' ) {
 			Logger::$logger->alert('Empty, skipped');
 		}
 		foreach($this->files() as $file) {
-			if( $this->name($file) == $name ) {
+			if( $this->name($file) === $name ) {
 				Logger::$logger->alert('Migration already exist');
 			}
 		}
-		$file_name = $this->directory . '/' . time() . '_' . strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', $name)) . '.php';
+		$file_name = $this->directory . '/' . time() . '_' . strtolower(preg_replace('/(?<!^)[A-Z]/', '_$0', (string) $name) ?: '') . '.php';
 		$data = <<<PHP
 <?php
 

@@ -43,7 +43,7 @@ final class Redis {
 	public function __construct(array $config) {
 		self::$instance = $this;
 		$this->config = $config;
-		$this->connect();
+		self::connect();
 	}
 
 	/**
@@ -122,7 +122,7 @@ final class Redis {
 		} else {
 			$id = uniqid();
 			Redis::client()->setWithoutOverwrite($key, $id);
-			if( Redis::client()->get($key) == $id ) {
+			if( Redis::client()->get($key) === $id ) {
 				try {
 					Redis::client()->expireIn($key, $ttl);
 					call_user_func($callback);

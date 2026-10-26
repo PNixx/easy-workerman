@@ -1,5 +1,6 @@
 includes:
   - phar://phpstan.phar/conf/bleedingEdge.neon
+  - vendor/phpstan/phpstan-strict-rules/rules.neon
 rules:
 	- PereOrga\PHPStanRules\Rules\SnakeCaseVariableRule
 	- PereOrga\PHPStanRules\Rules\SnakeCaseParameterRule
@@ -16,8 +17,16 @@ parameters:
   checkMissingCallableSignature: true
   reportUnmatchedIgnoredErrors: false
   treatPhpDocTypesAsCertain: false
+  rememberPossiblyImpureFunctionValues: true
   ignoreErrors:
   	-
   	  identifier: missingType.iterableValue
   	-
   	  identifier: new.staticInAbstractClassStaticMethod
+  strictRules:
+    booleansInConditions: false
+    disallowedEmpty: false
+    disallowedShortTernary: false
+    strictArrayFilter: false
+    numericOperandsInArithmeticOperators: false
+    noVariableVariables: true

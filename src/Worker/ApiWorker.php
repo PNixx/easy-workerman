@@ -41,7 +41,8 @@ abstract class ApiWorker extends HttpWorker {
 			$controller = new $route[0]($params, $request, new CompositeCancellation($cancellation, new TimeoutCancellation($this->api_timeout, 'Long request, breaking')));
 
 			//Check action is existing
-			if( !method_exists($controller, $route[1]) ) {
+			$action = [$controller, $route[1]];
+			if( !is_callable($action) ) {
 				return $this->failed('Action not found', 404);
 			}
 
@@ -51,11 +52,11 @@ abstract class ApiWorker extends HttpWorker {
 			}
 
 			//Execute action
-			if( !in_array($route[1], $controller->skipBeforeAction) ) {
+			if( !in_array($route[1], $controller->skipBeforeAction, true) ) {
 				$controller->beforeAction();
 				$cancellation->throwIfRequested();
 			}
-			$result = $controller->{$route[1]}(...$route['vars']);
+			$result = $action(...$route['vars']);
 
 			//Return result
 			if( $result instanceof Response ) {

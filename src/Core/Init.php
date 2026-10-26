@@ -16,7 +16,7 @@ class Init {
 	 * @return CLImate
 	 */
 	public static function config(bool $can_daemon = true, array $extend = [], string $config_file = 'config/secrets.ini'): CLImate {
-		if( getenv('DEVELOPMENT') == 'true' ) {
+		if( getenv('DEVELOPMENT') === 'true' ) {
 			define('DEVELOPMENT', true);
 			echo "\e[1;33m⚠️ Run with development mode\e[0m\n";
 		}
@@ -108,10 +108,10 @@ class Init {
 	 * @throws \ErrorException
 	 */
 	public static function errorHandler(int $severity, string $message, string $filename, int $lineno): bool {
-		if( error_reporting() == 0 ) {
+		if( error_reporting() === 0 ) {
 			return false;
 		}
-		if( $severity == E_DEPRECATED ) {
+		if( $severity === E_DEPRECATED ) {
 			Logger::$logger->warning($message . ', ' . $filename . ':' . $lineno);
 			return true;
 		} elseif( error_reporting() & $severity ) {
