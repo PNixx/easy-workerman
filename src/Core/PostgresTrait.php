@@ -7,6 +7,7 @@ use Amp\Postgres\PostgresResult;
 use Amp\Postgres\PostgresTransaction;
 use Monolog\Level;
 use Nixx\EasyWorkerman\Core\Arel\ArelInterface;
+use Traversable;
 
 /**
  * @phpstan-type Params array<string, mixed>
@@ -132,7 +133,7 @@ trait PostgresTrait {
 	 * @param non-empty-string $sql
 	 * @param Params           $params
 	 * @param bool             $prepare_array Нужно ли конвертировать массивы для использования в select запроса с column IN (...)
-	 * @return PostgresResult
+	 * @return PostgresResult&Traversable<int, PostgresTraitResult>
 	 */
 	public function execute(string $sql, array $params = [], bool $prepare_array = true): PostgresResult {
 		$time = microtime(true);
@@ -147,6 +148,7 @@ trait PostgresTrait {
 			}
 		}
 
+		/** @var PostgresResult&Traversable<int, PostgresTraitResult> $result */
 		$result = $this->connection()->execute($sql, $params);
 
 		//Пишем в лог
@@ -163,7 +165,7 @@ trait PostgresTrait {
 	 * @param int|null              $offset
 	 * @param non-empty-string|null $order
 	 * @param non-empty-string|null $group
-	 * @return PostgresResult
+	 * @return PostgresResult&Traversable<int, PostgresTraitResult>
 	 */
 	public function select(string $table, array $params, array $columns = ['*'], ?int $limit = null, ?int $offset = null, ?string $order = null, ?string $group = null): PostgresResult {
 		//Строим условие
@@ -236,7 +238,7 @@ trait PostgresTrait {
 
 	/**
 	 * @param non-empty-string $sql
-	 * @return PostgresResult
+	 * @return PostgresResult&Traversable<int, PostgresTraitResult>
 	 */
 	public function query(string $sql): PostgresResult {
 		$time = microtime(true);
